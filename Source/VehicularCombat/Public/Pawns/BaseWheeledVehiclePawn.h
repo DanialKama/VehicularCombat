@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "WheeledVehiclePawn.h"
+#include "Enumerations/CharacterEnums.h"
 #include "BaseWheeledVehiclePawn.generated.h"
 
 class APickupActor;
@@ -40,6 +41,11 @@ protected:
 	
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerAddWeapon(AWeaponPickupActor* NewWeapon);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSwitchWeapon(EWeaponToDo NewWeapon);
+	bool ServerSwitchWeapon_Validate(EWeaponToDo NewWeapon);
+	void ServerSwitchWeapon_Implementation(EWeaponToDo NewWeapon);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStartFireWeapon();
@@ -106,8 +112,11 @@ protected:
 	class ACustomPlayerState* PlayerStateRef;
 
 	/** The weapon that is currently in the player's hand */
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentWeapon, BlueprintReadOnly, Category = "Defaults")
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentWeapon, BlueprintReadOnly)
 	AWeaponPickupActor* CurrentWeapon;
+
+	UPROPERTY(Replicated)
+	EWeaponToDo CurrentWeaponSlot;
 
 	/** To call Multicast Death only once */
 	UPROPERTY(Replicated)

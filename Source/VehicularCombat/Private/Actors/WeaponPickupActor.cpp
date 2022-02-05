@@ -61,7 +61,7 @@ bool AWeaponPickupActor::ServerSpawnProjectile_Validate(FTransform NewTransform)
 
 void AWeaponPickupActor::ServerSpawnProjectile_Implementation(FTransform NewTransform)
 {
-	// if (bIsAimed)
+	// if (bIsAimed)	// TODO - Need cleanup
 	// {
 	// 	ReferenceTransform = NewTransform;
 	// 	const FTransform Transform = ProjectileLineTrace();

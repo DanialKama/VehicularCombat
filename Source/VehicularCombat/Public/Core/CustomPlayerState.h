@@ -30,6 +30,10 @@ public:
 	UPROPERTY(Replicated)
 	AWeaponPickupActor* SecondaryWeapon;
 
+	/** Assault Rifle Ammo */
+	UPROPERTY(Replicated)
+	int32 AssaultRifleAmmo;
+
 	/** MiniGun Ammo */
 	UPROPERTY(Replicated)
 	int32 MiniGunAmmo;

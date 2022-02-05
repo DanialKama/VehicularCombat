@@ -48,6 +48,7 @@ void ABaseWheeledVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, bDoOnceReload);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, bCanFireWeapon);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, CurrentWeapon);
+	DOREPLIFETIME(ABaseWheeledVehiclePawn, CurrentWeaponSlot);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, bDoOnceDeath);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, RespawnDelay);
 }
@@ -124,6 +125,7 @@ void ABaseWheeledVehiclePawn::ServerAddWeapon_Implementation(AWeaponPickupActor*
 		}
 		PlayerStateRef->PrimaryWeapon = NewWeapon;
 		CurrentWeapon = NewWeapon;
+		CurrentWeaponSlot = EWeaponToDo::Primary;
 		break;
 	case 1:
 		// Secondary
@@ -139,6 +141,53 @@ void ABaseWheeledVehiclePawn::ServerAddWeapon_Implementation(AWeaponPickupActor*
 			NewWeapon->AttachToComponent(GetMesh(), AttachmentRules, FName("SecondaryWeaponSocket"));
 		}
 		PlayerStateRef->SecondaryWeapon = NewWeapon;
+		break;
+	}
+}
+
+bool ABaseWheeledVehiclePawn::ServerSwitchWeapon_Validate(EWeaponToDo NewWeapon)
+{
+	if (CurrentWeaponSlot != NewWeapon)
+	{
+		switch (NewWeapon)
+		{
+		case 0:
+			// No Weapon = Nothing to switch
+			return false;
+		case 1:
+			// Primary Weapon
+			if (PlayerStateRef->PrimaryWeapon)
+			{
+				return true;
+			}
+			return false;
+		case 2:
+			// Secondary Weapon
+			if (PlayerStateRef->SecondaryWeapon)
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+	return false;
+}
+
+void ABaseWheeledVehiclePawn::ServerSwitchWeapon_Implementation(EWeaponToDo NewWeapon)
+{
+	CurrentWeaponSlot = NewWeapon;
+	switch (NewWeapon)
+	{
+	case 0:
+		// No Weapon
+		break;
+	case 1:
+		// Primary Weapon
+		CurrentWeapon = PlayerStateRef->PrimaryWeapon;
+		break;
+	case 2:
+		// Secondary Weapon
+		CurrentWeapon = PlayerStateRef->SecondaryWeapon;
 		break;
 	}
 }
@@ -235,20 +284,27 @@ bool ABaseWheeledVehiclePawn::CanReloadWeapon() const
 		switch (CurrentWeapon->AmmoType)
 		{
 		case 0:
+			// Assault Rifle ammo
+			if (PlayerStateRef->AssaultRifleAmmo > 0)
+			{
+				return true;
+			}
+			return false;
+		case 1:
 			// MiniGun Ammo
 			if (PlayerStateRef->MiniGunAmmo > 0)
 			{
 				return true;
 			}
 			return false;
-		case 1:
+		case 2:
 			// Shotgun Ammo
 			if (PlayerStateRef->ShotgunAmmo > 0)
 			{
 				return true;
 			}
 			return false;
-		case 2:
+		case 3:
 			// Rocket
 			if (PlayerStateRef->Rocket > 0)
 			{

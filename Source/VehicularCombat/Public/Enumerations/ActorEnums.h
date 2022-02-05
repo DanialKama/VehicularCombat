@@ -30,17 +30,19 @@ enum class EWeaponType : uint8
 UENUM(BlueprintType)
 enum class EAmmoType : uint8
 {
-	MiniGun	UMETA(DisplayName = "Minigun ammo"),	// MiniGun ammo
-	Shotgun	UMETA(DisplayName = "Shotgun ammo"),	// Shotgun ammo
-	Rocket	UMETA(DisplayName = "Rocket")			// Rocket
+	AssaultRifle	UMETA(DisplayName = "Assault Rifle ammo"),	// Assault Rifle ammo
+	MiniGun			UMETA(DisplayName = "Minigun ammo"),		// MiniGun ammo
+	Shotgun			UMETA(DisplayName = "Shotgun ammo"),		// Shotgun ammo
+	Rocket			UMETA(DisplayName = "Rocket")				// Rocket
 };
 
 /** To use in player UI */
 UENUM(BlueprintType)
 enum class EWeaponName : uint8
 {
-	Default		UMETA(DisplayName = "Default"),
-	MiniGun		UMETA(DisplayName = "Minigun"),
-	Shotgun		UMETA(DisplayName = "Shotgun"),
-	Launcher	UMETA(DisplayName = "Launcher")
+	Default			UMETA(DisplayName = "Default"),
+	AssaultRifle	UMETA(DisplayName = "Assault Rifle"),
+	MiniGun			UMETA(DisplayName = "Minigun"),
+	Shotgun			UMETA(DisplayName = "Shotgun"),
+	Launcher		UMETA(DisplayName = "Launcher")
 };

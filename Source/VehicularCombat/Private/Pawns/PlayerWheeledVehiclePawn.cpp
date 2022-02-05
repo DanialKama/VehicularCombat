@@ -9,6 +9,7 @@
 #include "Components/TimelineComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Core/CustomGameMode.h"
+#include "Core/CustomPlayerState.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -113,6 +114,9 @@ void APlayerWheeledVehiclePawn::SetupPlayerInputComponent(class UInputComponent*
 	PlayerInputComponent->BindAction("Handbrake", IE_Released, this, &APlayerWheeledVehiclePawn::OnHandbrakeReleased);
 	
 	PlayerInputComponent->BindAction("SwitchCamera", IE_Pressed, this, &APlayerWheeledVehiclePawn::ToggleCamera);
+
+	PlayerInputComponent->BindAction("SwitchToPrimary", IE_Pressed, this, &APlayerWheeledVehiclePawn::SwitchToPrimary);
+	PlayerInputComponent->BindAction("SwitchToSecondary", IE_Pressed, this, &APlayerWheeledVehiclePawn::SwitchToSecondary);
 }
 
 void APlayerWheeledVehiclePawn::BeginPlay()
@@ -128,7 +132,7 @@ void APlayerWheeledVehiclePawn::BeginPlay()
 		if (bAutoAdjustCamera == false)
 		{
 			SpringArmOutside->bUsePawnControlRotation = true;
-			SpringArmInside->bUsePawnControlRotation = true;
+			// SpringArmInside->bUsePawnControlRotation = true;	// TODO - Need to be fixed
 		}
 
 		PlayerControllerRef = Cast<APlayerController>(GetController());
@@ -189,8 +193,13 @@ void APlayerWheeledVehiclePawn::Tick(float DeltaSeconds)
 
 	if (CurrentWeapon && GetLocalRole() == ROLE_Authority)
 	{
-		const FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(CurrentWeapon->GetActorLocation(), UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation());
-		CurrentWeapon->SetActorRotation(FRotator(0.0f, Rotation.Yaw + 90.0f, Rotation.Pitch));
+		if (bInCarCamera == false)	// TODO - Add lerp
+		{
+			UE_LOG(LogTemp, Warning, TEXT(__FUNCTION__));
+
+			const FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(CurrentWeapon->GetActorLocation(), UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation());
+			CurrentWeapon->SetActorRotation(FRotator(0.0f, Rotation.Yaw + 90.0f, Rotation.Pitch));
+		}
 	}
 	
 	if (GetLocalRole() == ROLE_AutonomousProxy)
@@ -245,7 +254,7 @@ void APlayerWheeledVehiclePawn::LookUp(float Value)
 
 void APlayerWheeledVehiclePawn::LookRight(float Value)
 {
-	// if (bInCarCamera)	// TODO
+	// if (bInCarCamera)	// TODO - Oh No, not math again
 	// {
 	// 	// clamp view yaw between -50 and 50
 	// 	float ControlYaw = PlayerControllerRef->GetControlRotation().Yaw;
@@ -338,11 +347,27 @@ void APlayerWheeledVehiclePawn::OnRep_CurrentWeapon()
 {
 	if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		// TODO - Update player UI
+		// TODO - Update player UI (Show weapon info based on current weapon name and type)
 	}
 }
 
-void APlayerWheeledVehiclePawn::ToggleCamera()
+void APlayerWheeledVehiclePawn::SwitchToPrimary()
+{
+	if (CurrentWeaponSlot != EWeaponToDo::Primary && PlayerStateRef->PrimaryWeapon)
+	{
+		ServerSwitchWeapon(EWeaponToDo::Primary);
+	}
+}
+
+void APlayerWheeledVehiclePawn::SwitchToSecondary()
+{
+	if (CurrentWeaponSlot != EWeaponToDo::Secondary && PlayerStateRef->SecondaryWeapon)
+	{
+		ServerSwitchWeapon(EWeaponToDo::Secondary);
+	}
+}
+
+void APlayerWheeledVehiclePawn::ToggleCamera() // TODO - Add cool down
 {
 	ServerToggleCamera();
 }
@@ -352,6 +377,11 @@ void APlayerWheeledVehiclePawn::ServerToggleCamera_Implementation()
 	bInCarCamera = !bInCarCamera;
 	if (bInCarCamera)
 	{
+		if (CurrentWeapon && CurrentWeaponSlot != EWeaponToDo::NoWeapon)
+		{
+			CurrentWeapon->SetActorRelativeRotation(FRotator::ZeroRotator);
+		}
+		
 		ClientUpdateCurrentCamera(true);
 		// CameraManager->ViewYawMax = 50.0f;
 		// CameraManager->ViewYawMin = -50.0f;

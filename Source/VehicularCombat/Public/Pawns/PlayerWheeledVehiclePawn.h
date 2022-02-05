@@ -86,6 +86,12 @@ private:
 	void ClientUpdateCurrentCamera(bool bInCar);
 	void ClientUpdateCurrentCamera_Implementation(bool bInCar);
 
+	/** Switch to primary weapon */
+	void SwitchToPrimary();
+
+	/** Switch to secondary weapon */
+	void SwitchToSecondary();
+
 	void StartFireWeapon();
 	void StopFireWeapon();
 

@@ -9,6 +9,5 @@ enum class EWeaponToDo : uint8
 {
 	NoWeapon,
 	Primary,
-	Secondary,
-	Sidearm
+	Secondary
 };

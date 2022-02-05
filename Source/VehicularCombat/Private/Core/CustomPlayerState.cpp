@@ -8,6 +8,7 @@ ACustomPlayerState::ACustomPlayerState()
 {
 	// Initialize variables
 	PrimaryWeapon = SecondaryWeapon =  nullptr;
+	AssaultRifleAmmo = 120;
 	MiniGunAmmo = 999;
 	ShotgunAmmo = 60;
 	Rocket = 10;
@@ -20,6 +21,7 @@ void ACustomPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &O
 	// Replicate to everyone
 	DOREPLIFETIME(ACustomPlayerState, PrimaryWeapon);
 	DOREPLIFETIME(ACustomPlayerState, SecondaryWeapon);
+	DOREPLIFETIME(ACustomPlayerState, AssaultRifleAmmo);
 	DOREPLIFETIME(ACustomPlayerState, MiniGunAmmo);
 	DOREPLIFETIME(ACustomPlayerState, ShotgunAmmo);
 	DOREPLIFETIME(ACustomPlayerState, Rocket);
