@@ -78,6 +78,9 @@ private:
 	/** Switch between cameras */
 	void ToggleCamera();
 
+	UFUNCTION()
+	void ResetToggleCamera();
+
 	UFUNCTION(Server, Reliable)
 	void ServerToggleCamera();
 	void ServerToggleCamera_Implementation();
@@ -113,6 +116,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
 	TSubclassOf<AWeaponPickupActor> SecondaryWeaponToAdd;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ToolTip = "A delay between toggling the camera to stop the player from spamming the server.", AllowPrivateAccess = true))
+	float ToggleCameraCooldown;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ToolTip = "Automatically moves the camera to its default location", AllowPrivateAccess = true))
 	uint8 bAutoAdjustCamera : 1;
 	
@@ -126,7 +132,7 @@ private:
 	UPROPERTY(Replicated)
 	bool bInCarCamera;
 
-	uint8 bDoOnceResetRotation : 1;
+	uint8 bDoOnceResetRotation : 1, bCanToggleCamera : 1;
 
 	/** Can the player look left and right? Used to limit the player's field of view inside the car. */
 	uint8 bCanLookRight : 1;
@@ -148,7 +154,7 @@ private:
 	UPROPERTY()
 	APlayerCameraManager* CameraManager;
 
-	FTimerHandle ResetRotationTimer, RecoilTimer;
+	FTimerHandle ResetRotationTimer, RecoilTimer, ToggleCameraTimer;
 };
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

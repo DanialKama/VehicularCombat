@@ -84,6 +84,8 @@ APlayerWheeledVehiclePawn::APlayerWheeledVehiclePawn()
 	bInCarCamera = false;
 	bAlwaysUpdateDashboard = false;
 	bDoOnceResetRotation = true;
+	bCanToggleCamera = true;
+	ToggleCameraCooldown = 0.3f;
 }
 
 void APlayerWheeledVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
@@ -195,8 +197,6 @@ void APlayerWheeledVehiclePawn::Tick(float DeltaSeconds)
 	{
 		if (bInCarCamera == false)	// TODO - Add lerp
 		{
-			UE_LOG(LogTemp, Warning, TEXT(__FUNCTION__));
-
 			const FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(CurrentWeapon->GetActorLocation(), UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation());
 			CurrentWeapon->SetActorRotation(FRotator(0.0f, Rotation.Yaw + 90.0f, Rotation.Pitch));
 		}
@@ -367,9 +367,20 @@ void APlayerWheeledVehiclePawn::SwitchToSecondary()
 	}
 }
 
-void APlayerWheeledVehiclePawn::ToggleCamera() // TODO - Add cool down
+void APlayerWheeledVehiclePawn::ToggleCamera()
 {
-	ServerToggleCamera();
+	if (bCanToggleCamera)
+	{
+		ServerToggleCamera();
+
+		bCanToggleCamera = false;
+		GetWorld()->GetTimerManager().SetTimer(ToggleCameraTimer, this, &APlayerWheeledVehiclePawn::ResetToggleCamera, ToggleCameraCooldown);
+	}
+}
+
+void APlayerWheeledVehiclePawn::ResetToggleCamera()
+{
+	bCanToggleCamera = true;
 }
 
 void APlayerWheeledVehiclePawn::ServerToggleCamera_Implementation()
