@@ -1,6 +1,6 @@
 # Vehicular Combat (Multiplayer)
 ## Introduction
-Vehicular Combat prototype game developed in Unreal Engine 5 with Chaos vehicles for dedicated servers.
+Multiplayer Vehicular Combat prototype game developed in Unreal Engine 5 with Chaos vehicles.
 This is not a production-ready project but a starting point for implementing multiplayer vehicular combat mechanics.
 
 The assets included are listed below.
