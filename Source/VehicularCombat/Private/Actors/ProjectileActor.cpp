@@ -73,7 +73,7 @@ void AProjectileActor::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherAct
 		}
 		
 		const FName AmmoName = StaticEnum<EAmmoType>()->GetValueAsName(AmmoType);
-		if (bIsExplosive && ExplosiveProjectileDataTable)
+		if (bIsExplosive && ExplosiveProjectileDataTable) // TODO - deal damage to instigator
 		{
 			const FExplosiveProjectileDamage* ExplosiveProjectileInfo = ExplosiveProjectileDataTable->FindRow<FExplosiveProjectileDamage>(AmmoName, TEXT("Projectile Info Context"), true);
 			if (ExplosiveProjectileInfo)

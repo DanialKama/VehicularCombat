@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Enumerations/ActorEnums.h"
 #include "GameFramework/HUD.h"
 #include "PlayerHUD.generated.h"
 
@@ -28,4 +29,10 @@ public:
 	/** Update health level on player UI */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerHUD")
 	void UpdateHealth(float NewHealth);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerHUD")
+	void UpdateCurrentWeapon(EWeaponName WeaponName);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerHUD")
+	void UpdateAmmo(int32 CurrentMagAmmo);
 };

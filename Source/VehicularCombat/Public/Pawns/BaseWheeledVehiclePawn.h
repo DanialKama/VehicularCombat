@@ -49,6 +49,8 @@ protected:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStartFireWeapon();
+	
+	virtual void ServerFireWeapon_Implementation();
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStopFireWeapon();
@@ -79,7 +81,6 @@ private:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerFireWeapon();
 	bool ServerFireWeapon_Validate();
-	void ServerFireWeapon_Implementation();
 
 	/** Add a delay to stop the player from firing faster than the weapon's fire rate */
 	UFUNCTION(Server, Reliable)

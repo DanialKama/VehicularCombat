@@ -195,7 +195,7 @@ void APlayerWheeledVehiclePawn::Tick(float DeltaSeconds)
 
 	if (CurrentWeapon && GetLocalRole() == ROLE_Authority)
 	{
-		if (bInCarCamera == false)	// TODO - Add lerp
+		if (bInCarCamera == false)	// TODO - Add ease
 		{
 			const FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(CurrentWeapon->GetActorLocation(), UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation());
 			CurrentWeapon->SetActorRotation(FRotator(0.0f, Rotation.Yaw + 90.0f, Rotation.Pitch));
@@ -305,6 +305,21 @@ void APlayerWheeledVehiclePawn::StopFireWeapon()
 	}
 }
 
+void APlayerWheeledVehiclePawn::ServerFireWeapon_Implementation()
+{
+	Super::ServerFireWeapon_Implementation();
+
+	ClientUpdateAmmo(CurrentWeapon->CurrentMagazineAmmo);
+}
+
+void APlayerWheeledVehiclePawn::ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo)
+{
+	if (PlayerHUDRef)
+	{
+		PlayerHUDRef->UpdateAmmo(CurrentMagAmmo);
+	}
+}
+
 void APlayerWheeledVehiclePawn::AddRecoil()
 {
 	if (CanFireWeapon())
@@ -345,9 +360,9 @@ void APlayerWheeledVehiclePawn::OnHandbrakeReleased()
 
 void APlayerWheeledVehiclePawn::OnRep_CurrentWeapon()
 {
-	if (GetLocalRole() == ROLE_AutonomousProxy)
+	if (CurrentWeapon && PlayerHUDRef)
 	{
-		// TODO - Update player UI (Show weapon info based on current weapon name and type)
+		PlayerHUDRef->UpdateCurrentWeapon(CurrentWeapon->WeaponName);
 	}
 }
 

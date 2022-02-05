@@ -98,6 +98,12 @@ private:
 	void StartFireWeapon();
 	void StopFireWeapon();
 
+	virtual void ServerFireWeapon_Implementation() override;
+
+	UFUNCTION(Client, Unreliable)
+	void ClientUpdateAmmo(int32 CurrentMagAmmo);
+	void ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo);
+
 	/** Add recoil to player crosshair */
 	void AddRecoil();
 
