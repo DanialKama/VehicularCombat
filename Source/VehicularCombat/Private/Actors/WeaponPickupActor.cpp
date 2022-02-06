@@ -23,11 +23,12 @@ AWeaponPickupActor::AWeaponPickupActor()
 	ProjectileRef = nullptr;
 	WeaponType = EWeaponType::Primary;
 	AmmoType = EAmmoType::Rocket;
-	WeaponName = EWeaponName::Default;
+	WeaponName = EWeaponName::NoName;
 	bIsAutomatic = false;
 	TimeBetweenShots = 0.5;
 	Range = 5000.0f;
 	ReloadAmount = CurrentMagazineAmmo = MagazineSize = 1;
+	ReloadTime = 2.0f;
 }
 
 void AWeaponPickupActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
@@ -38,6 +39,7 @@ void AWeaponPickupActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &O
 	DOREPLIFETIME(AWeaponPickupActor, MagazineSize);
 	DOREPLIFETIME(AWeaponPickupActor, CurrentMagazineAmmo);
 	DOREPLIFETIME(AWeaponPickupActor, ReloadAmount);
+	DOREPLIFETIME(AWeaponPickupActor, ReloadTime);
 }
 
 void AWeaponPickupActor::BeginPlay()

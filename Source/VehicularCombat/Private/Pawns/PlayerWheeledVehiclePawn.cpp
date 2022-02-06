@@ -4,7 +4,6 @@
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "Actors/WeaponPickupActor.h"
 #include "Camera/CameraComponent.h"
-#include "Components/SlateWrapperTypes.h"
 #include "Components/TextRenderComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Components/WidgetComponent.h"
@@ -305,11 +304,12 @@ void APlayerWheeledVehiclePawn::StopFireWeapon()
 	}
 }
 
-void APlayerWheeledVehiclePawn::ServerFireWeapon_Implementation()
+void APlayerWheeledVehiclePawn::ClientUpdateWeaponState_Implementation(EWeaponState WeaponState)
 {
-	Super::ServerFireWeapon_Implementation();
-
-	ClientUpdateAmmo(CurrentWeapon->CurrentMagazineAmmo);
+	if (PlayerHUDRef)
+	{
+		PlayerHUDRef->UpdateWeaponState(WeaponState);
+	}
 }
 
 void APlayerWheeledVehiclePawn::ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo)
@@ -360,9 +360,24 @@ void APlayerWheeledVehiclePawn::OnHandbrakeReleased()
 
 void APlayerWheeledVehiclePawn::OnRep_CurrentWeapon()
 {
-	if (CurrentWeapon && PlayerHUDRef)
+	if (PlayerHUDRef)
 	{
-		PlayerHUDRef->UpdateCurrentWeapon(CurrentWeapon->WeaponName);
+		PlayerHUDRef->UpdateWeaponState(EWeaponState::Idle);
+
+		if (CurrentWeapon)
+		{
+			PlayerHUDRef->UpdateCurrentWeapon(CurrentWeapon->WeaponName);
+			PlayerHUDRef->UpdateAmmo(CurrentWeapon->CurrentMagazineAmmo);
+			
+			if (CurrentWeapon->CurrentMagazineAmmo <= 0)
+			{
+				PlayerHUDRef->UpdateWeaponState(EWeaponState::NoAmmo);
+			}
+		}
+		else
+		{
+			PlayerHUDRef->UpdateCurrentWeapon(EWeaponName::NoName);
+		}
 	}
 }
 
@@ -428,7 +443,11 @@ void APlayerWheeledVehiclePawn::ClientUpdateCurrentCamera_Implementation(bool bI
 {
 	if (bInCar)
 	{
-		PlayerHUDRef->SetUIVisibility(ESlateVisibility::Hidden);
+		if (PlayerHUDRef)
+		{
+			PlayerHUDRef->UpdateUI(true);
+		}
+		
 		CameraOutside->Deactivate();
 		CameraInside->Activate();
 		CameraManager->ViewPitchMax = 20.0f;
@@ -438,9 +457,13 @@ void APlayerWheeledVehiclePawn::ClientUpdateCurrentCamera_Implementation(bool bI
 	{
 		CameraInside->Deactivate();
 		CameraOutside->Activate();
-		PlayerHUDRef->SetUIVisibility(ESlateVisibility::HitTestInvisible);
 		CameraManager->ViewPitchMax = 25.0f;
 		CameraManager->ViewPitchMin = -20.0f;
+		
+		if (PlayerHUDRef)
+		{
+			PlayerHUDRef->UpdateUI(false);
+		}
 	}
 }
 

@@ -28,6 +28,15 @@ enum class EWeaponType : uint8
 };
 
 UENUM(BlueprintType)
+enum class EWeaponState : uint8
+{
+	Idle,
+	Firing,
+	Reloading,
+	NoAmmo
+};
+
+UENUM(BlueprintType)
 enum class EAmmoType : uint8
 {
 	AssaultRifle	UMETA(DisplayName = "Assault Rifle ammo"),	// Assault Rifle ammo
@@ -40,9 +49,9 @@ enum class EAmmoType : uint8
 UENUM(BlueprintType)
 enum class EWeaponName : uint8
 {
-	Default			UMETA(DisplayName = "Default"),
+	NoName		UMETA(DisplayName = "No Name"),
 	AssaultRifle	UMETA(DisplayName = "Assault Rifle"),
 	MiniGun			UMETA(DisplayName = "Minigun"),
 	Shotgun			UMETA(DisplayName = "Shotgun"),
-	Launcher		UMETA(DisplayName = "Launcher")
+	RocketLauncher		UMETA(DisplayName = "Rocket Launcher")
 };

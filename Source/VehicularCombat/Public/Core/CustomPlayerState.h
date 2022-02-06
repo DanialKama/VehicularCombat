@@ -42,7 +42,7 @@ public:
 	UPROPERTY(Replicated)
 	int32 ShotgunAmmo;
 
-	/** 40 mm HE Grenade */
+	/** Rocket Ammo */
 	UPROPERTY(Replicated)
-	int32 Rocket;
+	int32 RocketAmmo;
 };

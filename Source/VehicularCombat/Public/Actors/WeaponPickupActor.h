@@ -126,14 +126,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
 	float Range;
 
-	UPROPERTY(Replicated, EditDefaultsOnly, meta = (ClampMin = "0", UIMin = "0"))
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0", UIMin = "0"))
 	int32 MagazineSize;
 	
-	UPROPERTY(Replicated, EditAnywhere, meta = (ToolTip = "If value set to something greater than zero then in initial value dose not change"))
+	UPROPERTY(Replicated, EditAnywhere, Category = "Defaults", meta = (ToolTip = "If value set to something greater than zero then in initial value dose not change"))
 	int32 CurrentMagazineAmmo;
 
-	UPROPERTY(Replicated, EditDefaultsOnly, meta = (ClampMin = "0", ClampMax = "999", UIMin = "0", UIMax = "999"))
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0", ClampMax = "999", UIMin = "0", UIMax = "999"))
 	int32 ReloadAmount;
+
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0", UIMin = "0"))
+	float ReloadTime;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
 	FRecoilData RecoilData;

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Enumerations/ActorEnums.h"
 #include "Pawns/BaseWheeledVehiclePawn.h"
 #include "PlayerWheeledVehiclePawn.generated.h"
 
@@ -98,12 +99,6 @@ private:
 	void StartFireWeapon();
 	void StopFireWeapon();
 
-	virtual void ServerFireWeapon_Implementation() override;
-
-	UFUNCTION(Client, Unreliable)
-	void ClientUpdateAmmo(int32 CurrentMagAmmo);
-	void ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo);
-
 	/** Add recoil to player crosshair */
 	void AddRecoil();
 
@@ -112,6 +107,8 @@ private:
 	/** Update the gear and speed */
 	void UpdateUI() const;
 
+	virtual void ClientUpdateWeaponState_Implementation(EWeaponState WeaponState) override;
+	virtual void ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo) override;
 	virtual void ClientUpdateHealth_Implementation(float NewHealth) override;
 
 // Variables

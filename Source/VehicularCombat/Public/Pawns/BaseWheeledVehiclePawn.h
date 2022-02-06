@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "WheeledVehiclePawn.h"
+#include "Enumerations/ActorEnums.h"
 #include "Enumerations/CharacterEnums.h"
 #include "BaseWheeledVehiclePawn.generated.h"
 
@@ -61,12 +62,14 @@ protected:
 	/** Checking if there is any ammo in inventory. */
 	bool CanReloadWeapon() const;
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void ServerReloadWeapon();
-
+	
 	UFUNCTION()
 	virtual void OnRep_CurrentWeapon();
 	
+	virtual void ClientUpdateWeaponState_Implementation(EWeaponState WeaponState);
+	virtual void ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo);
 	virtual void ClientUpdateHealth_Implementation(float NewHealth);
 
 private:
@@ -87,14 +90,19 @@ private:
 	void ServerResetFireWeapon();
 	void ServerResetFireWeapon_Implementation();
 
-	bool ServerReloadWeapon_Validate();
 	void ServerReloadWeapon_Implementation();
 	
 	bool ServerAddWeapon_Validate(AWeaponPickupActor* NewWeapon);
 	void ServerAddWeapon_Implementation(AWeaponPickupActor* NewWeapon);
 
 	void ServerSetHealthLevel_Implementation(float CurrentHealth, float MaxHealth);
+
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateWeaponState(EWeaponState WeaponState);
 	
+	UFUNCTION(Client, Unreliable)
+	void ClientUpdateAmmo(int32 CurrentMagAmmo);
+
 	/** Update health on player UI */
 	UFUNCTION(Client, Unreliable)
 	void ClientUpdateHealth(float NewHealth);
@@ -142,7 +150,7 @@ private:
 	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0.0", UIMin = "0.0", AllowPrivateAccess = true))
 	float RespawnDelay;
 	
-	FTimerHandle FireWeaponTimer, ResetFireWeaponTimer;
+	FTimerHandle FireWeaponTimer, ResetFireWeaponTimer, ReloadTimer;
 };
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

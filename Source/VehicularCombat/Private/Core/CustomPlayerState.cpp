@@ -11,7 +11,7 @@ ACustomPlayerState::ACustomPlayerState()
 	AssaultRifleAmmo = 120;
 	MiniGunAmmo = 999;
 	ShotgunAmmo = 60;
-	Rocket = 10;
+	RocketAmmo = 10;
 }
 
 void ACustomPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
@@ -24,7 +24,7 @@ void ACustomPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &O
 	DOREPLIFETIME(ACustomPlayerState, AssaultRifleAmmo);
 	DOREPLIFETIME(ACustomPlayerState, MiniGunAmmo);
 	DOREPLIFETIME(ACustomPlayerState, ShotgunAmmo);
-	DOREPLIFETIME(ACustomPlayerState, Rocket);
+	DOREPLIFETIME(ACustomPlayerState, RocketAmmo);
 }
 
 void ACustomPlayerState::ServerPlayerDied_Implementation()

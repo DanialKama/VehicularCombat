@@ -6,7 +6,7 @@ void APlayerHUD::Initialize_Implementation()
 {
 }
 
-void APlayerHUD::SetUIVisibility_Implementation(ESlateVisibility Visibility)
+void APlayerHUD::UpdateUI_Implementation(bool bInCar)
 {
 }
 void APlayerHUD::AddCrosshairRecoil_Implementation(float Recoil, float ControlTime)
@@ -22,6 +22,10 @@ void APlayerHUD::UpdateHealth_Implementation(float NewHealth)
 }
 
 void APlayerHUD::UpdateCurrentWeapon_Implementation(EWeaponName WeaponName)
+{
+}
+
+void APlayerHUD::UpdateWeaponState_Implementation(EWeaponState WeaponState)
 {
 }
 

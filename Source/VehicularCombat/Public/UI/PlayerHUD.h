@@ -18,7 +18,7 @@ public:
 	void Initialize();
 	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerHUD")
-	void SetUIVisibility(ESlateVisibility Visibility);
+	void UpdateUI(bool bInCar);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerHUD")
 	void AddCrosshairRecoil(float Recoil, float ControlTime);
@@ -32,6 +32,9 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerHUD")
 	void UpdateCurrentWeapon(EWeaponName WeaponName);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerHUD")
+	void UpdateWeaponState(EWeaponState WeaponState);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "PlayerHUD")
 	void UpdateAmmo(int32 CurrentMagAmmo);

@@ -175,6 +175,7 @@ bool ABaseWheeledVehiclePawn::ServerSwitchWeapon_Validate(EWeaponToDo NewWeapon)
 
 void ABaseWheeledVehiclePawn::ServerSwitchWeapon_Implementation(EWeaponToDo NewWeapon)
 {
+	GetWorld()->GetTimerManager().ClearTimer(ReloadTimer);
 	CurrentWeaponSlot = NewWeapon;
 	switch (NewWeapon)
 	{
@@ -245,8 +246,23 @@ bool ABaseWheeledVehiclePawn::ServerFireWeapon_Validate()
 
 void ABaseWheeledVehiclePawn::ServerFireWeapon_Implementation()
 {
-	CurrentWeapon->CurrentMagazineAmmo = --CurrentWeapon->CurrentMagazineAmmo;
 	CurrentWeapon->ServerSpawnProjectile(GetActorTransform());
+
+	CurrentWeapon->CurrentMagazineAmmo = --CurrentWeapon->CurrentMagazineAmmo;
+	ClientUpdateAmmo(CurrentWeapon->CurrentMagazineAmmo);
+
+	if (CurrentWeapon->CurrentMagazineAmmo <= 0)
+	{
+		if (CanReloadWeapon())
+		{
+			ClientUpdateWeaponState(EWeaponState::Reloading);
+			GetWorld()->GetTimerManager().SetTimer(ReloadTimer, this, &ABaseWheeledVehiclePawn::ServerReloadWeapon, CurrentWeapon->ReloadTime);
+		}
+		else
+		{
+			ClientUpdateWeaponState(EWeaponState::NoAmmo);
+		}
+	}
 }
 
 bool ABaseWheeledVehiclePawn::CanFireWeapon() const
@@ -263,23 +279,82 @@ void ABaseWheeledVehiclePawn::ServerResetFireWeapon_Implementation()
 	bCanFireWeapon = true;
 }
 
-bool ABaseWheeledVehiclePawn::ServerReloadWeapon_Validate()
-{
-	if (bDoOnceReload && CanReloadWeapon())
-	{
-		return true;
-	}
-	return false;
-}
-
 void ABaseWheeledVehiclePawn::ServerReloadWeapon_Implementation()
 {
-	bDoOnceReload = false;
+	switch (CurrentWeapon->AmmoType)
+	{
+		int32 UsedAmmoFromMag;
+		int32 CurrentReloadAmount;
+	case 0:
+		// Assault Rifle ammo
+		UsedAmmoFromMag = CurrentWeapon->MagazineSize - CurrentWeapon->CurrentMagazineAmmo;
+		if (PlayerStateRef->AssaultRifleAmmo >= UsedAmmoFromMag)
+		{
+			CurrentReloadAmount = FMath::Clamp(CurrentWeapon->ReloadAmount, 0, UsedAmmoFromMag);
+			PlayerStateRef->AssaultRifleAmmo -= CurrentReloadAmount;
+			CurrentWeapon->CurrentMagazineAmmo = CurrentReloadAmount + CurrentWeapon->CurrentMagazineAmmo;
+		}
+		else
+		{
+			CurrentWeapon->CurrentMagazineAmmo += PlayerStateRef->AssaultRifleAmmo;
+			PlayerStateRef->AssaultRifleAmmo = 0;
+		}
+		break;
+	case 1:
+		// MiniGun Ammo
+		UsedAmmoFromMag = CurrentWeapon->MagazineSize - CurrentWeapon->CurrentMagazineAmmo;
+		if (PlayerStateRef->MiniGunAmmo >= UsedAmmoFromMag)
+		{
+			CurrentReloadAmount = FMath::Clamp(CurrentWeapon->ReloadAmount, 0, UsedAmmoFromMag);
+			PlayerStateRef->MiniGunAmmo -= CurrentReloadAmount;
+			CurrentWeapon->CurrentMagazineAmmo = CurrentReloadAmount + CurrentWeapon->CurrentMagazineAmmo;
+		}
+		else
+		{
+			CurrentWeapon->CurrentMagazineAmmo += PlayerStateRef->MiniGunAmmo;
+			PlayerStateRef->MiniGunAmmo = 0;
+		}
+		break;
+	case 2:
+		// Shotgun Ammo
+		UsedAmmoFromMag = CurrentWeapon->MagazineSize - CurrentWeapon->CurrentMagazineAmmo;
+		if (PlayerStateRef->ShotgunAmmo >= UsedAmmoFromMag)
+		{
+			CurrentReloadAmount = FMath::Clamp(CurrentWeapon->ReloadAmount, 0, UsedAmmoFromMag);
+			PlayerStateRef->ShotgunAmmo -= CurrentReloadAmount;
+			CurrentWeapon->CurrentMagazineAmmo = CurrentReloadAmount + CurrentWeapon->CurrentMagazineAmmo;
+		}
+		else
+		{
+			CurrentWeapon->CurrentMagazineAmmo += PlayerStateRef->ShotgunAmmo;
+			PlayerStateRef->ShotgunAmmo = 0;
+		}
+		break;
+	case 3:
+		// Rocket Ammo
+		UsedAmmoFromMag = CurrentWeapon->MagazineSize - CurrentWeapon->CurrentMagazineAmmo;
+		if (PlayerStateRef->RocketAmmo >= UsedAmmoFromMag)
+		{
+			CurrentReloadAmount = FMath::Clamp(CurrentWeapon->ReloadAmount, 0, UsedAmmoFromMag);
+			PlayerStateRef->RocketAmmo -= CurrentReloadAmount;
+			CurrentWeapon->CurrentMagazineAmmo = CurrentReloadAmount + CurrentWeapon->CurrentMagazineAmmo;
+		}
+		else
+		{
+			CurrentWeapon->CurrentMagazineAmmo += PlayerStateRef->RocketAmmo;
+			PlayerStateRef->RocketAmmo = 0;
+		}
+		break;
+	}
+	
+	ClientUpdateAmmo(CurrentWeapon->CurrentMagazineAmmo);
+	ClientUpdateWeaponState(EWeaponState::Idle);
+	bDoOnceReload = true;
 }
 
 bool ABaseWheeledVehiclePawn::CanReloadWeapon() const
 {
-	if (CurrentWeapon && CurrentWeapon->CurrentMagazineAmmo < CurrentWeapon->MagazineSize)
+	if (bDoOnceReload && CurrentWeapon && CurrentWeapon->CurrentMagazineAmmo < CurrentWeapon->MagazineSize)
 	{
 		switch (CurrentWeapon->AmmoType)
 		{
@@ -305,8 +380,8 @@ bool ABaseWheeledVehiclePawn::CanReloadWeapon() const
 			}
 			return false;
 		case 3:
-			// Rocket
-			if (PlayerStateRef->Rocket > 0)
+			// Rocket Ammo
+			if (PlayerStateRef->RocketAmmo > 0)
 			{
 				return true;
 			}
@@ -335,11 +410,6 @@ void ABaseWheeledVehiclePawn::ServerSetHealthLevel_Implementation(float CurrentH
 	ClientUpdateHealth(CurrentHealth / MaxHealth);
 }
 
-void ABaseWheeledVehiclePawn::ClientUpdateHealth_Implementation(float NewHealth)
-{
-	// Override in the player vehicle class
-}
-
 void ABaseWheeledVehiclePawn::MulticastDeath_Implementation()
 {
 	if (GetLocalRole() == ROLE_Authority)
@@ -354,6 +424,19 @@ void ABaseWheeledVehiclePawn::MulticastDeath_Implementation()
 void ABaseWheeledVehiclePawn::ServerStartDestroy_Implementation()
 {
 	Destroy();
+}
+
+// Override in the player vehicle class
+void ABaseWheeledVehiclePawn::ClientUpdateWeaponState_Implementation(EWeaponState WeaponState)
+{
+}
+
+void ABaseWheeledVehiclePawn::ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo)
+{
+}
+
+void ABaseWheeledVehiclePawn::ClientUpdateHealth_Implementation(float NewHealth)
+{
 }
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
