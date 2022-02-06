@@ -6,8 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "BaseComponent.generated.h"
 
-class ABaseCharacter;
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class VEHICULARCOMBAT_API UBaseComponent : public UActorComponent
 {

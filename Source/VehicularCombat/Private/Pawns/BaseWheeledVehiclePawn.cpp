@@ -27,14 +27,11 @@ ABaseWheeledVehiclePawn::ABaseWheeledVehiclePawn()
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health Component"));
 
 	// Initialize variables
-	bDoOnceDeath = true;
-	
-	// Initialize variables
 	CurrentWeapon = nullptr;
 	PlayerStateRef = nullptr;
 	RespawnDelay = 5.0f;
 	bDoOnceMoving = bDoOnceStopped = true;
-	bDoOnceDeath = true;
+	bIsAlive = true;
 	bCanFireWeapon = true;
 	bDoOnceReload = true;
 }
@@ -45,11 +42,12 @@ void ABaseWheeledVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 
 	// Replicate to everyone
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, PlayerStateRef);
+	DOREPLIFETIME(ABaseWheeledVehiclePawn, CurrentCamera);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, bDoOnceReload);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, bCanFireWeapon);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, CurrentWeapon);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, CurrentWeaponSlot);
-	DOREPLIFETIME(ABaseWheeledVehiclePawn, bDoOnceDeath);
+	DOREPLIFETIME(ABaseWheeledVehiclePawn, bIsAlive);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, RespawnDelay);
 }
 
@@ -147,7 +145,7 @@ void ABaseWheeledVehiclePawn::ServerAddWeapon_Implementation(AWeaponPickupActor*
 
 bool ABaseWheeledVehiclePawn::ServerSwitchWeapon_Validate(EWeaponToDo NewWeapon)
 {
-	if (CurrentWeaponSlot != NewWeapon)
+	if (bIsAlive && CurrentWeaponSlot != NewWeapon)
 	{
 		switch (NewWeapon)
 		{
@@ -191,11 +189,6 @@ void ABaseWheeledVehiclePawn::ServerSwitchWeapon_Implementation(EWeaponToDo NewW
 		CurrentWeapon = PlayerStateRef->SecondaryWeapon;
 		break;
 	}
-}
-
-void ABaseWheeledVehiclePawn::OnRep_CurrentWeapon()
-{
-	// Override in the player vehicle class
 }
 
 bool ABaseWheeledVehiclePawn::ServerStartFireWeapon_Validate()
@@ -267,7 +260,7 @@ void ABaseWheeledVehiclePawn::ServerFireWeapon_Implementation()
 
 bool ABaseWheeledVehiclePawn::CanFireWeapon() const
 {
-	if (bCanFireWeapon && CurrentWeapon && CurrentWeapon->CurrentMagazineAmmo > 0)
+	if (bIsAlive && bCanFireWeapon && CurrentWeapon && CurrentWeapon->CurrentMagazineAmmo > 0)
 	{
 		return true;
 	}
@@ -398,9 +391,11 @@ void ABaseWheeledVehiclePawn::ServerSetHealthLevel_Implementation(float CurrentH
 	{
 		HealthComponent->ServerStartRestoreHealth();
 	}
-	if (CurrentHealth <= 0.0f && bDoOnceDeath)
+	if (CurrentHealth <= 0.0f && bIsAlive)
 	{
-		bDoOnceDeath = false;
+		CurrentWeapon = nullptr;
+		bIsAlive = false;
+		OnRep_IsAlive();
 		MulticastDeath();
 
 		FTimerHandle TimerHandle;
@@ -417,7 +412,6 @@ void ABaseWheeledVehiclePawn::MulticastDeath_Implementation()
 		PlayerStateRef->ServerPlayerDied();
 	}
 
-	GetMesh()->bPauseAnims = true;
 	HealthComponent->DestroyComponent();
 }
 
@@ -436,6 +430,14 @@ void ABaseWheeledVehiclePawn::ClientUpdateAmmo_Implementation(int32 CurrentMagAm
 }
 
 void ABaseWheeledVehiclePawn::ClientUpdateHealth_Implementation(float NewHealth)
+{
+}
+
+void ABaseWheeledVehiclePawn::OnRep_CurrentWeapon()
+{
+}
+
+void ABaseWheeledVehiclePawn::OnRep_IsAlive()
 {
 }
 

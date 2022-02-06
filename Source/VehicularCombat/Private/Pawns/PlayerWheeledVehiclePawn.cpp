@@ -20,6 +20,8 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 APlayerWheeledVehiclePawn::APlayerWheeledVehiclePawn()
 {
+	PrimaryActorTick.bStartWithTickEnabled = false;
+	
 	// Create a spring arm component for our chase camera
 	SpringArmOutside = CreateDefaultSubobject<USpringArmComponent>(TEXT("Outside Spring Arm"));
 	SpringArmOutside->SetRelativeLocation(FVector(0.0f, 0.0f, 35.0f));
@@ -78,6 +80,7 @@ APlayerWheeledVehiclePawn::APlayerWheeledVehiclePawn()
 	ResetRotationTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("Reset Rotation Timeline"));
 
 	// Initialize variables
+	CurrentCamera = CameraOutside;
 	LookRightValue = LookUpValue = 0.0f;
 	bAutoAdjustCamera = true;
 	bInCarCamera = false;
@@ -92,6 +95,7 @@ void APlayerWheeledVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	// Replicate to everyone
+	DOREPLIFETIME(APlayerWheeledVehiclePawn, PlayerControllerRef);
 	DOREPLIFETIME(APlayerWheeledVehiclePawn, bInCarCamera);
 }
 
@@ -123,31 +127,17 @@ void APlayerWheeledVehiclePawn::SetupPlayerInputComponent(class UInputComponent*
 void APlayerWheeledVehiclePawn::BeginPlay()
 {
 	Super::BeginPlay();
-
-	CameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
-	CameraManager->ViewPitchMax = 25.0f;
-	CameraManager->ViewPitchMin = -20.0f;
-
+	
 	if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		if (bAutoAdjustCamera == false)
 		{
 			SpringArmOutside->bUsePawnControlRotation = true;
-			// SpringArmInside->bUsePawnControlRotation = true;	// TODO - Need to be fixed
+			// SpringArmInside->bUsePawnControlRotation = true;	// TODO - Need to be improved
 		}
-
-		PlayerControllerRef = Cast<APlayerController>(GetController());
-		if (PlayerControllerRef)
-		{
-			PlayerHUDRef = Cast<APlayerHUD>(PlayerControllerRef->GetHUD());
-			if (PlayerHUDRef)
-			{
-				PlayerHUDRef->Initialize();
-			}
-		}
-
+	
 		WidgetRef = Cast<UInCarWidget>(WidgetDashboard->GetWidget());
-
+	
 		if (ResetRotationCurve)
 		{
 			FOnTimelineFloat TimelineProgress{};
@@ -163,24 +153,35 @@ void APlayerWheeledVehiclePawn::BeginPlay()
 void APlayerWheeledVehiclePawn::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+	
+	PlayerControllerRef = Cast<APlayerController>(NewController);
+	if (PlayerControllerRef)
+	{
+		ClientInitialize();
 
+		PlayerControllerRef->PlayerCameraManager->ViewPitchMax = 25.0f;
+		PlayerControllerRef->PlayerCameraManager->ViewPitchMin = -20.0f;
+
+		SetActorTickEnabled(true);
+	}
+	
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Owner = this;
 	SpawnParameters.Instigator = GetInstigator();
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		
+	
 	if (PrimaryWeaponToAdd)
 	{
-		AWeaponPickupActor* Weapon1 = GetWorld()->SpawnActor<AWeaponPickupActor>(PrimaryWeaponToAdd, GetActorLocation(), GetActorRotation(), SpawnParameters);
+		AWeaponPickupActor* Weapon1 = GetWorld()->SpawnActor<AWeaponPickupActor>(PrimaryWeaponToAdd, GetMesh()->GetSocketLocation(FName("PrimaryWeaponSocket")), GetActorRotation(), SpawnParameters);
 		if (Weapon1)
 		{
 			ServerAddWeapon(Weapon1);
 		}
 	}
-
+	
 	if (SecondaryWeaponToAdd)
 	{
-		AWeaponPickupActor* Weapon2 = GetWorld()->SpawnActor<AWeaponPickupActor>(PrimaryWeaponToAdd, GetActorLocation(), GetActorRotation(), SpawnParameters);
+		AWeaponPickupActor* Weapon2 = GetWorld()->SpawnActor<AWeaponPickupActor>(SecondaryWeaponToAdd, GetMesh()->GetSocketLocation(FName("SecondaryWeaponSocket")), GetActorRotation(), SpawnParameters);
 		if (Weapon2)
 		{
 			ServerAddWeapon(Weapon2);
@@ -188,15 +189,29 @@ void APlayerWheeledVehiclePawn::PossessedBy(AController* NewController)
 	}
 }
 
+void APlayerWheeledVehiclePawn::ClientInitialize_Implementation()
+{
+	PlayerControllerRef->PlayerCameraManager->ViewPitchMax = 25.0f;
+	PlayerControllerRef->PlayerCameraManager->ViewPitchMin = -20.0f;
+
+	PlayerHUDRef = Cast<APlayerHUD>(PlayerControllerRef->GetHUD());
+	if (PlayerHUDRef)
+	{
+		PlayerHUDRef->Initialize();
+	}
+
+	SetActorTickEnabled(true);
+}
+
 void APlayerWheeledVehiclePawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
+	
 	if (CurrentWeapon && GetLocalRole() == ROLE_Authority)
 	{
 		if (bInCarCamera == false)	// TODO - Add ease
 		{
-			const FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(CurrentWeapon->GetActorLocation(), UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation());
+			const FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(CurrentWeapon->GetActorLocation(), PlayerControllerRef->PlayerCameraManager->GetCameraLocation());
 			CurrentWeapon->SetActorRotation(FRotator(0.0f, Rotation.Yaw + 90.0f, Rotation.Pitch));
 		}
 	}
@@ -219,30 +234,36 @@ void APlayerWheeledVehiclePawn::Tick(float DeltaSeconds)
 				bDoOnceResetRotation = true;
 			}
 		}
-
+	
 		UpdateUI();
 	}
 }
 
-void APlayerWheeledVehiclePawn::MoveForward(float Val)
+void APlayerWheeledVehiclePawn::MoveForward(float Value)
 {
-	if (Val > 0)
+	if (bIsAlive)
 	{
-		GetVehicleMovementComponent()->SetThrottleInput(Val);
-		GetVehicleMovementComponent()->SetBrakeInput(0.0f);
-		GetVehicleMovementComponent()->UpdatedPrimitive->WakeAllRigidBodies();
-	}
-	else
-	{
-		GetVehicleMovementComponent()->SetThrottleInput(0.0f);
-		GetVehicleMovementComponent()->SetBrakeInput(-Val);
-		GetVehicleMovementComponent()->UpdatedPrimitive->WakeAllRigidBodies();
+		if (Value > 0)
+		{
+			GetVehicleMovementComponent()->SetThrottleInput(Value);
+			GetVehicleMovementComponent()->SetBrakeInput(0.0f);
+			GetVehicleMovementComponent()->UpdatedPrimitive->WakeAllRigidBodies();
+		}
+		else
+		{
+			GetVehicleMovementComponent()->SetThrottleInput(0.0f);
+			GetVehicleMovementComponent()->SetBrakeInput(-Value);
+			GetVehicleMovementComponent()->UpdatedPrimitive->WakeAllRigidBodies();
+		}
 	}
 }
 
-void APlayerWheeledVehiclePawn::MoveRight(float Val)
+void APlayerWheeledVehiclePawn::MoveRight(float Value)
 {
-	GetVehicleMovementComponent()->SetSteeringInput(Val);
+	if (bIsAlive)
+	{
+		GetVehicleMovementComponent()->SetSteeringInput(Value);
+	}
 }
 
 void APlayerWheeledVehiclePawn::LookUp(float Value)
@@ -383,7 +404,7 @@ void APlayerWheeledVehiclePawn::OnRep_CurrentWeapon()
 
 void APlayerWheeledVehiclePawn::SwitchToPrimary()
 {
-	if (CurrentWeaponSlot != EWeaponToDo::Primary && PlayerStateRef->PrimaryWeapon)
+	if (bIsAlive && CurrentWeaponSlot != EWeaponToDo::Primary && PlayerStateRef->PrimaryWeapon)
 	{
 		ServerSwitchWeapon(EWeaponToDo::Primary);
 	}
@@ -391,7 +412,7 @@ void APlayerWheeledVehiclePawn::SwitchToPrimary()
 
 void APlayerWheeledVehiclePawn::SwitchToSecondary()
 {
-	if (CurrentWeaponSlot != EWeaponToDo::Secondary && PlayerStateRef->SecondaryWeapon)
+	if (bIsAlive && CurrentWeaponSlot != EWeaponToDo::Secondary && PlayerStateRef->SecondaryWeapon)
 	{
 		ServerSwitchWeapon(EWeaponToDo::Secondary);
 	}
@@ -399,7 +420,7 @@ void APlayerWheeledVehiclePawn::SwitchToSecondary()
 
 void APlayerWheeledVehiclePawn::ToggleCamera()
 {
-	if (bCanToggleCamera)
+	if (bCanToggleCamera && bIsAlive)
 	{
 		ServerToggleCamera();
 
@@ -415,27 +436,32 @@ void APlayerWheeledVehiclePawn::ResetToggleCamera()
 
 void APlayerWheeledVehiclePawn::ServerToggleCamera_Implementation()
 {
-	bInCarCamera = !bInCarCamera;
-	if (bInCarCamera)
+	if (bIsAlive)
 	{
-		if (CurrentWeapon && CurrentWeaponSlot != EWeaponToDo::NoWeapon)
+		bInCarCamera = !bInCarCamera;
+		if (bInCarCamera)
 		{
-			CurrentWeapon->SetActorRelativeRotation(FRotator::ZeroRotator);
+			if (CurrentWeapon && CurrentWeaponSlot != EWeaponToDo::NoWeapon)
+			{
+				CurrentWeapon->SetActorRelativeRotation(FRotator::ZeroRotator);
+			}
+
+			CurrentCamera = CameraInside;
+			ClientUpdateCurrentCamera(true);
+			// PlayerControllerRef->PlayerCameraManager->ViewYawMax = 50.0f;
+			// PlayerControllerRef->PlayerCameraManager->ViewYawMin = -50.0f;
+			PlayerControllerRef->PlayerCameraManager->ViewPitchMax = 20.0f;
+			PlayerControllerRef->PlayerCameraManager->ViewPitchMin = -20.0f;
 		}
-		
-		ClientUpdateCurrentCamera(true);
-		// CameraManager->ViewYawMax = 50.0f;
-		// CameraManager->ViewYawMin = -50.0f;
-		CameraManager->ViewPitchMax = 20.0f;
-		CameraManager->ViewPitchMin = -20.0f;
-	}
-	else
-	{
-		ClientUpdateCurrentCamera(false);
-		// CameraManager->ViewYawMax = 359.99f;
-		// CameraManager->ViewYawMin = 0.0f;
-		CameraManager->ViewPitchMax = 25.0f;
-		CameraManager->ViewPitchMin = -20.0f;
+		else
+		{
+			CurrentCamera = CameraOutside;
+			ClientUpdateCurrentCamera(false);
+			// PlayerControllerRef->PlayerCameraManager->ViewYawMax = 359.99f;
+			// PlayerControllerRef->PlayerCameraManager->ViewYawMin = 0.0f;
+			PlayerControllerRef->PlayerCameraManager->ViewPitchMax = 25.0f;
+			PlayerControllerRef->PlayerCameraManager->ViewPitchMin = -20.0f;
+		}
 	}
 }
 
@@ -450,15 +476,15 @@ void APlayerWheeledVehiclePawn::ClientUpdateCurrentCamera_Implementation(bool bI
 		
 		CameraOutside->Deactivate();
 		CameraInside->Activate();
-		CameraManager->ViewPitchMax = 20.0f;
-		CameraManager->ViewPitchMin = -20.0f;
+		PlayerControllerRef->PlayerCameraManager->ViewPitchMax = 20.0f;
+		PlayerControllerRef->PlayerCameraManager->ViewPitchMin = -20.0f;
 	}
 	else
 	{
 		CameraInside->Deactivate();
 		CameraOutside->Activate();
-		CameraManager->ViewPitchMax = 25.0f;
-		CameraManager->ViewPitchMin = -20.0f;
+		PlayerControllerRef->PlayerCameraManager->ViewPitchMax = 25.0f;
+		PlayerControllerRef->PlayerCameraManager->ViewPitchMin = -20.0f;
 		
 		if (PlayerHUDRef)
 		{
@@ -493,9 +519,10 @@ void APlayerWheeledVehiclePawn::Destroyed()
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		// In case of player leave the session without getting killed
-		if (bDoOnceDeath)
+		if (bIsAlive)
 		{
-			bDoOnceDeath = false;
+			bIsAlive = false;
+			OnRep_IsAlive();
 		}
 
 		// Get player controller reference before destroying the player
@@ -508,6 +535,19 @@ void APlayerWheeledVehiclePawn::Destroyed()
 		if (GameMode)
 		{
 			GameMode->ServerStartRespawn(RespawnControllerRef);
+		}
+	}
+}
+
+void APlayerWheeledVehiclePawn::OnRep_IsAlive()
+{
+	if (bIsAlive == false && bInCarCamera && GetLocalRole() == ROLE_Authority)
+	{
+		if (PlayerControllerRef)
+		{
+			ClientUpdateCurrentCamera(false);
+			PlayerControllerRef->PlayerCameraManager->ViewPitchMax = 25.0f;
+			PlayerControllerRef->PlayerCameraManager->ViewPitchMin = -20.0f;
 		}
 	}
 }

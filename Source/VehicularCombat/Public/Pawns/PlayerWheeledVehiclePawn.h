@@ -50,11 +50,15 @@ protected:
 	virtual void Destroyed() override;
 
 private:
+	UFUNCTION(Client, Reliable)
+	void ClientInitialize();
+	void ClientInitialize_Implementation();
+	
 	/** Handle pressing forwards */
-	void MoveForward(float Val);
+	void MoveForward(float Value);
 
 	/** Handle pressing right */
-	void MoveRight(float Val);
+	void MoveRight(float Value);
 
 	void LookUp(float Value);
 	void LookRight(float Value);
@@ -103,6 +107,7 @@ private:
 	void AddRecoil();
 
 	virtual void OnRep_CurrentWeapon() override;
+	virtual void OnRep_IsAlive() override;
 
 	/** Update the gear and speed */
 	void UpdateUI() const;
@@ -145,7 +150,7 @@ private:
 
 	float LookUpValue, LookRightValue;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	APlayerController* PlayerControllerRef;
 
 	UPROPERTY()
@@ -153,9 +158,6 @@ private:
 
 	UPROPERTY()
 	class UInCarWidget* WidgetRef;
-
-	UPROPERTY()
-	APlayerCameraManager* CameraManager;
 
 	FTimerHandle ResetRotationTimer, RecoilTimer, ToggleCameraTimer;
 };

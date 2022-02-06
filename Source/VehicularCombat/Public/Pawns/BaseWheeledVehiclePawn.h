@@ -67,6 +67,9 @@ protected:
 	
 	UFUNCTION()
 	virtual void OnRep_CurrentWeapon();
+
+	UFUNCTION()
+	virtual void OnRep_IsAlive();
 	
 	virtual void ClientUpdateWeaponState_Implementation(EWeaponState WeaponState);
 	virtual void ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo);
@@ -128,8 +131,8 @@ protected:
 	EWeaponToDo CurrentWeaponSlot;
 
 	/** To call Multicast Death only once */
-	UPROPERTY(Replicated)
-	uint8 bDoOnceDeath : 1;
+	UPROPERTY(ReplicatedUsing = OnRep_IsAlive)
+	uint8 bIsAlive : 1;
 
 	UPROPERTY(Replicated)
 	uint8 bCanFireWeapon : 1;
@@ -141,7 +144,7 @@ protected:
 	uint8 bDoOnceMoving : 1, bDoOnceStopped : 1;
 
 	/** Use as a reference for projectile line trace. */
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	class UCameraComponent* CurrentCamera;
 
 private:
