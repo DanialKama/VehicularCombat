@@ -129,10 +129,10 @@ private:
 
 // Variables
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "1", UIMin = "1", AllowPrivateAccess = true))
 	int32 NumberOfPellets;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0", UIMin = "0", AllowPrivateAccess = true))
 	int32 PelletSpread;
 	
 private:
@@ -145,7 +145,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (AllowPrivateAccess = true))
 	uint8 bIsExplosive : 1;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "1", UIMin = "1", AllowPrivateAccess = true))
 	float LifeSpan;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ToolTip = "Non-explosive projectiles", AllowPrivateAccess = true))

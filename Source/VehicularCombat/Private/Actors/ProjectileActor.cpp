@@ -13,10 +13,12 @@
 AProjectileActor::AProjectileActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bStartWithTickEnabled = false;
+	SetCanBeDamaged(false);
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 	SetRootComponent(StaticMesh);
-	StaticMesh->SetComponentTickEnabled(false);
+	StaticMesh->PrimaryComponentTick.bStartWithTickEnabled = false;
 	StaticMesh->SetNotifyRigidBodyCollision(true);
 	StaticMesh->CanCharacterStepUpOn = ECB_No;
 	StaticMesh->SetCollisionProfileName("Projectile");
@@ -27,6 +29,7 @@ AProjectileActor::AProjectileActor()
 
 	TrailParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Trail Particle"));
 	TrailParticle->SetupAttachment(StaticMesh, TEXT("TrailSocket"));
+	TrailParticle->PrimaryComponentTick.bStartWithTickEnabled = false;
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Projectile Movement"));
 	ProjectileMovement->InitialSpeed = 5000.0f;
@@ -73,7 +76,7 @@ void AProjectileActor::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherAct
 		}
 		
 		const FName AmmoName = StaticEnum<EAmmoType>()->GetValueAsName(AmmoType);
-		if (bIsExplosive && ExplosiveProjectileDataTable) // TODO - deal damage to instigator
+		if (bIsExplosive && ExplosiveProjectileDataTable)
 		{
 			const FExplosiveProjectileDamage* ExplosiveProjectileInfo = ExplosiveProjectileDataTable->FindRow<FExplosiveProjectileDamage>(AmmoName, TEXT("Projectile Info Context"), true);
 			if (ExplosiveProjectileInfo)
