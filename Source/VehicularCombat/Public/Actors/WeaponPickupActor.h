@@ -73,6 +73,9 @@ class VEHICULARCOMBAT_API AWeaponPickupActor : public APickupActor
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* SkeletalMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	class USphereComponent* SphereCollision;
 	
 // Functions
 public:
@@ -95,13 +98,6 @@ private:
 	void MulticastSpawnProjectile(TSubclassOf<AProjectileActor> ProjectileToSpawn, int32 NumberOfPellets, FVector Location, FRotator Rotation, AActor* OwnerRef);
 	void MulticastSpawnProjectile_Implementation(TSubclassOf<AProjectileActor> ProjectileToSpawn, int32 NumberOfPellets, FVector Location, FRotator Rotation, AActor* OwnerRef);
 
-	/** Calculate spawn location and rotation for the projectile. */
-	FTransform ProjectileLineTrace() const;
-	
-	void CalculateLineTrace(FVector &Start, FVector &End) const;
-
-	FRotator RandomPointInCircle(float Radius, bool bIncludesNegative) const;
-
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastWeaponEffects();
 	void MulticastWeaponEffects_Implementation();
@@ -120,19 +116,26 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
 	uint8 bIsAutomatic : 1;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
+	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0", UIMin = "0"))
 	float TimeBetweenShots;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
+	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "1", UIMin = "1"))
 	float Range;
 
-	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0", UIMin = "0"))
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults")
+	int32 MaxAmmo;
+
+	/** Current ammo amount */
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults")
+	int32 CurrentAmmo;
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "1", UIMin = "1"))
 	int32 MagazineSize;
 	
 	UPROPERTY(Replicated, EditAnywhere, Category = "Defaults", meta = (ToolTip = "If value set to something greater than zero then in initial value dose not change"))
 	int32 CurrentMagazineAmmo;
 
-	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0", ClampMax = "999", UIMin = "0", UIMax = "999"))
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "1", ClampMax = "999", UIMin = "1", UIMax = "999"))
 	int32 ReloadAmount;
 
 	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0", UIMin = "0"))
