@@ -10,6 +10,7 @@
 
 class APickupActor;
 class AWeaponPickupActor;
+class AAmmoPickupActor;
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
@@ -28,6 +29,9 @@ class VEHICULARCOMBAT_API ABaseWheeledVehiclePawn : public AWheeledVehiclePawn
 // Functions
 public:
 	ABaseWheeledVehiclePawn();
+
+	UFUNCTION()
+	void OnRep_PickupRef();
 	
 	UFUNCTION(Server, Reliable)
 	void ServerSetHealthLevel(float CurrentHealth, float MaxHealth);
@@ -36,9 +40,6 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void Tick(float DeltaSeconds) override;
-
-	UFUNCTION(Server, Reliable)
-	void ServerInteractWithWeapon();
 	
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerAddWeapon(AWeaponPickupActor* NewWeapon);
@@ -51,8 +52,6 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStartFireWeapon();
 	
-	virtual void ServerFireWeapon_Implementation();
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerStopFireWeapon();
 
@@ -62,7 +61,7 @@ protected:
 	/** Checking if there is any ammo in inventory. */
 	bool CanReloadWeapon() const;
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerReloadWeapon();
 	
 	UFUNCTION()
@@ -72,12 +71,16 @@ protected:
 	virtual void OnRep_IsAlive();
 	
 	virtual void ClientUpdateWeaponState_Implementation(EWeaponState WeaponState);
-	virtual void ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo);
-	virtual void ClientUpdateHealth_Implementation(float NewHealth);
+	
+	UFUNCTION(Client, Unreliable)
+	void ClientUpdateAmmo(int32 CurrentAmmo);
+	virtual void ClientUpdateAmmo_Implementation(int32 CurrentAmmo);
+
+	virtual void ClientUpdatePickup_Implementation(EPickupType PickupType);
+	virtual void ServerSetHealthLevel_Implementation(float CurrentHealth, float MaxHealth);
+	virtual void ClientUpdateMagAmmo_Implementation(int32 CurrentMagAmmo);
 
 private:
-	void ServerInteractWithWeapon_Implementation();
-
 	bool ServerStartFireWeapon_Validate();
 	void ServerStartFireWeapon_Implementation();
 
@@ -87,28 +90,41 @@ private:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerFireWeapon();
 	bool ServerFireWeapon_Validate();
+	void ServerFireWeapon_Implementation();
 
 	/** Add a delay to stop the player from firing faster than the weapon's fire rate */
 	UFUNCTION(Server, Reliable)
 	void ServerResetFireWeapon();
 	void ServerResetFireWeapon_Implementation();
 
+	bool ServerReloadWeapon_Validate();
 	void ServerReloadWeapon_Implementation();
 	
 	bool ServerAddWeapon_Validate(AWeaponPickupActor* NewWeapon);
 	void ServerAddWeapon_Implementation(AWeaponPickupActor* NewWeapon);
 
-	void ServerSetHealthLevel_Implementation(float CurrentHealth, float MaxHealth);
+	UFUNCTION(Server, Reliable)
+	void ServerUpdateCurrentWeapon(AWeaponPickupActor* NewWeapon, EWeaponToDo NewWeaponSlot);
+	void ServerUpdateCurrentWeapon_Implementation(AWeaponPickupActor* NewWeapon, EWeaponToDo NewWeaponSlot);
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerAddAmmo(AAmmoPickupActor* PickupAmmo);
+	bool ServerAddAmmo_Validate(AAmmoPickupActor* PickupAmmo);
+	void ServerAddAmmo_Implementation(AAmmoPickupActor* PickupAmmo);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientUpdatePickup(EPickupType PickupType);
+	
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateWeaponState(EWeaponState WeaponState);
 	
 	UFUNCTION(Client, Unreliable)
-	void ClientUpdateAmmo(int32 CurrentMagAmmo);
-
-	/** Update health on player UI */
-	UFUNCTION(Client, Unreliable)
-	void ClientUpdateHealth(float NewHealth);
+	void ClientUpdateMagAmmo(int32 CurrentMagAmmo);
+	
+	/** Update speed boost time */
+	UFUNCTION(Server, Reliable)
+	void ServerUpdateSpeedBoost();
+	void ServerUpdateSpeedBoost_Implementation();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastDeath();
@@ -119,6 +135,10 @@ private:
 	void ServerStartDestroy_Implementation();
 
 // Variables
+public:
+	UPROPERTY(ReplicatedUsing = OnRep_PickupRef)
+	APickupActor* PickupRef;
+	
 protected:
 	UPROPERTY(Replicated)
 	class ACustomPlayerState* PlayerStateRef;
@@ -139,6 +159,12 @@ protected:
 
 	UPROPERTY(Replicated)
 	uint8 bDoOnceReload : 1;
+
+	UPROPERTY(Replicated)
+	uint8 bBoostSpeed : 1;
+
+	UPROPERTY(Replicated)
+	float SpeedBoostMultiplier;
 	
 	/** To check only once if character is moving or not */
 	uint8 bDoOnceMoving : 1, bDoOnceStopped : 1;
@@ -152,8 +178,11 @@ private:
 
 	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0.0", UIMin = "0.0", AllowPrivateAccess = true))
 	float RespawnDelay;
+
+	UPROPERTY(Replicated)
+	float SpeedBoostTime;
 	
-	FTimerHandle FireWeaponTimer, ResetFireWeaponTimer, ReloadTimer;
+	FTimerHandle FireWeaponTimer, ResetFireWeaponTimer, ReloadTimer, SpeedBoostTimer;
 };
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

@@ -3,6 +3,9 @@
 #include "Pawns/BaseWheeledVehiclePawn.h"
 #include "Components/AudioComponent.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
+#include "Actors/AmmoPickupActor.h"
+#include "Actors/HealthPickupActor.h"
+#include "Actors/SpeedBoostPickupActor.h"
 #include "Actors/WeaponPickupActor.h"
 #include "Components/HealthComponent.h"
 #include "Core/CustomPlayerState.h"
@@ -34,6 +37,9 @@ ABaseWheeledVehiclePawn::ABaseWheeledVehiclePawn()
 	bIsAlive = true;
 	bCanFireWeapon = true;
 	bDoOnceReload = true;
+	bBoostSpeed = false;
+	SpeedBoostTime = 0.0f;
+	SpeedBoostMultiplier = 1.0;
 }
 
 void ABaseWheeledVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
@@ -47,6 +53,9 @@ void ABaseWheeledVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, bCanFireWeapon);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, CurrentWeapon);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, CurrentWeaponSlot);
+	DOREPLIFETIME(ABaseWheeledVehiclePawn, bBoostSpeed);
+	DOREPLIFETIME(ABaseWheeledVehiclePawn, SpeedBoostTime);
+	DOREPLIFETIME(ABaseWheeledVehiclePawn, SpeedBoostMultiplier);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, bIsAlive);
 	DOREPLIFETIME(ABaseWheeledVehiclePawn, RespawnDelay);
 }
@@ -78,13 +87,67 @@ void ABaseWheeledVehiclePawn::Tick(float Delta)
 	EngineSoundComp->SetFloatParameter(EngineAudioRPM, WheeledVehicle->GetEngineRotationSpeed()*RPMToAudioScale);
 }
 
-void ABaseWheeledVehiclePawn::ServerInteractWithWeapon_Implementation()	// TODO - Check for weapon
+void ABaseWheeledVehiclePawn::OnRep_PickupRef()
 {
-	// AWeaponPickupActor* NewWeapon = Cast<AWeaponPickupActor>(???);
-	// if (NewWeapon)
-	// {
-	// 	ServerAddWeapon(NewWeapon);
-	// }
+	UE_LOG(LogTemp, Warning, TEXT(__FUNCTION__));
+
+	if (GetLocalRole() == ROLE_Authority && PickupRef)
+	{
+		switch (PickupRef->PickupType)
+		{
+		case 0:
+			// Weapon
+			{
+				AWeaponPickupActor* PickupWeapon = Cast<AWeaponPickupActor>(PickupRef);
+				if (PickupWeapon)
+				{
+					ServerAddWeapon(PickupWeapon);
+					ClientUpdatePickup(EPickupType::Weapon);
+				}
+			}
+			break;
+		case 1:
+			// Ammo
+			{
+				AAmmoPickupActor* PickupAmmo = Cast<AAmmoPickupActor>(PickupRef);
+				if (PickupAmmo)
+				{
+					ServerAddAmmo(PickupAmmo);
+					ClientUpdatePickup(EPickupType::Ammo);
+				}
+			}
+			break;
+		case 2:
+			// Health
+			{
+				AHealthPickupActor* PickupHealth = Cast<AHealthPickupActor>(PickupRef);
+				if (PickupHealth && HealthComponent->CurrentHealth < HealthComponent->MaxHealth)
+				{
+					ClientUpdatePickup(EPickupType::Health);
+					HealthComponent->ServerIncreaseHealth(PickupHealth->HealthAmount);
+					PickupHealth->PickupState = EPickupState::Used;
+					PickupHealth->OnRep_PickupState();
+				}
+			}
+			break;
+		case 3:
+			// Speed Boost
+			{
+				ASpeedBoostPickupActor* PickupSpeedBoost = Cast<ASpeedBoostPickupActor>(PickupRef);
+				if (PickupSpeedBoost)
+				{
+					bBoostSpeed = true;
+					SpeedBoostMultiplier = PickupSpeedBoost->BoostMultiplier;
+					SpeedBoostTime += PickupSpeedBoost->BoostTime;
+					GetWorld()->GetTimerManager().SetTimer(SpeedBoostTimer, this, &ABaseWheeledVehiclePawn::ServerUpdateSpeedBoost, 1.0f, true);
+					ClientUpdatePickup(EPickupType::SpeedBoost);
+					PickupSpeedBoost->PickupState = EPickupState::Used;
+					PickupSpeedBoost->OnRep_PickupState();
+				}
+			}
+			break;
+		}
+	}
 }
 
 bool ABaseWheeledVehiclePawn::ServerAddWeapon_Validate(AWeaponPickupActor* NewWeapon)
@@ -122,8 +185,7 @@ void ABaseWheeledVehiclePawn::ServerAddWeapon_Implementation(AWeaponPickupActor*
 			NewWeapon->AttachToComponent(GetMesh(), AttachmentRules, FName("PrimaryWeaponSocket"));
 		}
 		PlayerStateRef->PrimaryWeapon = NewWeapon;
-		CurrentWeapon = NewWeapon;
-		CurrentWeaponSlot = EWeaponToDo::Primary;
+		ServerUpdateCurrentWeapon(NewWeapon, EWeaponToDo::Primary);
 		break;
 	case 1:
 		// Secondary
@@ -139,8 +201,76 @@ void ABaseWheeledVehiclePawn::ServerAddWeapon_Implementation(AWeaponPickupActor*
 			NewWeapon->AttachToComponent(GetMesh(), AttachmentRules, FName("SecondaryWeaponSocket"));
 		}
 		PlayerStateRef->SecondaryWeapon = NewWeapon;
+		ServerUpdateCurrentWeapon(NewWeapon, EWeaponToDo::Secondary);
 		break;
 	}
+}
+
+void ABaseWheeledVehiclePawn::ServerUpdateCurrentWeapon_Implementation(AWeaponPickupActor* NewWeapon, EWeaponToDo NewWeaponSlot)
+{
+	if (NewWeapon)
+	{
+		if (CurrentWeaponSlot == NewWeaponSlot || CurrentWeaponSlot == EWeaponToDo::NoWeapon)
+		{
+			CurrentWeapon = NewWeapon;
+			CurrentWeaponSlot = NewWeaponSlot;
+		}
+	}
+	else
+	{
+		CurrentWeapon = nullptr;
+		CurrentWeaponSlot = EWeaponToDo::NoWeapon;
+	}
+}
+
+bool ABaseWheeledVehiclePawn::ServerAddAmmo_Validate(AAmmoPickupActor* PickupAmmo)
+{
+	if (PlayerStateRef->PrimaryWeapon && PlayerStateRef->PrimaryWeapon->AmmoType == PickupAmmo->AmmoType
+		&& PlayerStateRef->PrimaryWeapon->CurrentAmmo < PlayerStateRef->PrimaryWeapon->MaxAmmo)
+	{
+		return true;
+	}
+	
+	if (PlayerStateRef->SecondaryWeapon && PlayerStateRef->SecondaryWeapon->AmmoType == PickupAmmo->AmmoType
+		&& PlayerStateRef->SecondaryWeapon->CurrentAmmo < PlayerStateRef->SecondaryWeapon->MaxAmmo)
+	{
+		return true;
+	}
+	
+	return false;
+}
+
+void ABaseWheeledVehiclePawn::ServerAddAmmo_Implementation(AAmmoPickupActor* PickupAmmo)
+{
+	if (PlayerStateRef->PrimaryWeapon->AmmoType == PickupAmmo->AmmoType)
+	{
+		PlayerStateRef->PrimaryWeapon->CurrentAmmo = FMath::Clamp(PlayerStateRef->PrimaryWeapon->CurrentAmmo + PickupAmmo->AmmoAmount, 0, PlayerStateRef->PrimaryWeapon->MaxAmmo);
+		if (CurrentWeapon == PlayerStateRef->PrimaryWeapon)
+		{
+			ClientUpdateAmmo(CurrentWeapon->CurrentAmmo);
+
+			if (CurrentWeapon->CurrentAmmo <= 0)
+			{
+				ServerReloadWeapon();	// TODO - need fix
+			}
+		}
+	}
+	else
+	{
+		PlayerStateRef->SecondaryWeapon->CurrentAmmo = FMath::Clamp(PlayerStateRef->SecondaryWeapon->CurrentAmmo + PickupAmmo->AmmoAmount, 0, PlayerStateRef->SecondaryWeapon->MaxAmmo);
+		if (CurrentWeapon == PlayerStateRef->SecondaryWeapon)
+		{
+			ClientUpdateAmmo(CurrentWeapon->CurrentAmmo);
+
+			if (CurrentWeapon->CurrentAmmo <= 0)
+			{
+				ServerReloadWeapon();
+			}
+		}
+	}
+
+	PickupAmmo->PickupState = EPickupState::Used;
+	PickupAmmo->OnRep_PickupState();
 }
 
 bool ABaseWheeledVehiclePawn::ServerSwitchWeapon_Validate(EWeaponToDo NewWeapon)
@@ -242,7 +372,7 @@ void ABaseWheeledVehiclePawn::ServerFireWeapon_Implementation()
 	CurrentWeapon->ServerSpawnProjectile(GetActorTransform());
 
 	CurrentWeapon->CurrentMagazineAmmo = --CurrentWeapon->CurrentMagazineAmmo;
-	ClientUpdateAmmo(CurrentWeapon->CurrentMagazineAmmo);
+	ClientUpdateMagAmmo(CurrentWeapon->CurrentMagazineAmmo);
 
 	if (CurrentWeapon->CurrentMagazineAmmo <= 0)
 	{
@@ -272,116 +402,53 @@ void ABaseWheeledVehiclePawn::ServerResetFireWeapon_Implementation()
 	bCanFireWeapon = true;
 }
 
+bool ABaseWheeledVehiclePawn::ServerReloadWeapon_Validate()
+{
+	if (CurrentWeapon->CurrentAmmo > 0)
+	{
+		return true;
+	}
+	return false;
+}
+
 void ABaseWheeledVehiclePawn::ServerReloadWeapon_Implementation()
 {
-	switch (CurrentWeapon->AmmoType)
+	const int32 UsedAmmoFromMag = CurrentWeapon->MagazineSize - CurrentWeapon->CurrentMagazineAmmo;
+	if (CurrentWeapon->CurrentAmmo >= UsedAmmoFromMag)
 	{
-		int32 UsedAmmoFromMag;
-		int32 CurrentReloadAmount;
-	case 0:
-		// Assault Rifle ammo
-		UsedAmmoFromMag = CurrentWeapon->MagazineSize - CurrentWeapon->CurrentMagazineAmmo;
-		if (PlayerStateRef->AssaultRifleAmmo >= UsedAmmoFromMag)
-		{
-			CurrentReloadAmount = FMath::Clamp(CurrentWeapon->ReloadAmount, 0, UsedAmmoFromMag);
-			PlayerStateRef->AssaultRifleAmmo -= CurrentReloadAmount;
-			CurrentWeapon->CurrentMagazineAmmo = CurrentReloadAmount + CurrentWeapon->CurrentMagazineAmmo;
-		}
-		else
-		{
-			CurrentWeapon->CurrentMagazineAmmo += PlayerStateRef->AssaultRifleAmmo;
-			PlayerStateRef->AssaultRifleAmmo = 0;
-		}
-		break;
-	case 1:
-		// MiniGun Ammo
-		UsedAmmoFromMag = CurrentWeapon->MagazineSize - CurrentWeapon->CurrentMagazineAmmo;
-		if (PlayerStateRef->MiniGunAmmo >= UsedAmmoFromMag)
-		{
-			CurrentReloadAmount = FMath::Clamp(CurrentWeapon->ReloadAmount, 0, UsedAmmoFromMag);
-			PlayerStateRef->MiniGunAmmo -= CurrentReloadAmount;
-			CurrentWeapon->CurrentMagazineAmmo = CurrentReloadAmount + CurrentWeapon->CurrentMagazineAmmo;
-		}
-		else
-		{
-			CurrentWeapon->CurrentMagazineAmmo += PlayerStateRef->MiniGunAmmo;
-			PlayerStateRef->MiniGunAmmo = 0;
-		}
-		break;
-	case 2:
-		// Shotgun Ammo
-		UsedAmmoFromMag = CurrentWeapon->MagazineSize - CurrentWeapon->CurrentMagazineAmmo;
-		if (PlayerStateRef->ShotgunAmmo >= UsedAmmoFromMag)
-		{
-			CurrentReloadAmount = FMath::Clamp(CurrentWeapon->ReloadAmount, 0, UsedAmmoFromMag);
-			PlayerStateRef->ShotgunAmmo -= CurrentReloadAmount;
-			CurrentWeapon->CurrentMagazineAmmo = CurrentReloadAmount + CurrentWeapon->CurrentMagazineAmmo;
-		}
-		else
-		{
-			CurrentWeapon->CurrentMagazineAmmo += PlayerStateRef->ShotgunAmmo;
-			PlayerStateRef->ShotgunAmmo = 0;
-		}
-		break;
-	case 3:
-		// Rocket Ammo
-		UsedAmmoFromMag = CurrentWeapon->MagazineSize - CurrentWeapon->CurrentMagazineAmmo;
-		if (PlayerStateRef->RocketAmmo >= UsedAmmoFromMag)
-		{
-			CurrentReloadAmount = FMath::Clamp(CurrentWeapon->ReloadAmount, 0, UsedAmmoFromMag);
-			PlayerStateRef->RocketAmmo -= CurrentReloadAmount;
-			CurrentWeapon->CurrentMagazineAmmo = CurrentReloadAmount + CurrentWeapon->CurrentMagazineAmmo;
-		}
-		else
-		{
-			CurrentWeapon->CurrentMagazineAmmo += PlayerStateRef->RocketAmmo;
-			PlayerStateRef->RocketAmmo = 0;
-		}
-		break;
+		const int32 CurrentReloadAmount = FMath::Clamp(CurrentWeapon->ReloadAmount, 0, UsedAmmoFromMag);
+		CurrentWeapon->CurrentAmmo -= CurrentReloadAmount;
+		CurrentWeapon->CurrentMagazineAmmo = CurrentReloadAmount + CurrentWeapon->CurrentMagazineAmmo;
+	}
+	else
+	{
+		CurrentWeapon->CurrentMagazineAmmo += CurrentWeapon->CurrentAmmo;
+		CurrentWeapon->CurrentAmmo = 0;
 	}
 	
-	ClientUpdateAmmo(CurrentWeapon->CurrentMagazineAmmo);
+	ClientUpdateAmmo(CurrentWeapon->CurrentAmmo);
+	ClientUpdateMagAmmo(CurrentWeapon->CurrentMagazineAmmo);
 	ClientUpdateWeaponState(EWeaponState::Idle);
 	bDoOnceReload = true;
 }
 
 bool ABaseWheeledVehiclePawn::CanReloadWeapon() const
 {
-	if (bDoOnceReload && CurrentWeapon && CurrentWeapon->CurrentMagazineAmmo < CurrentWeapon->MagazineSize)
+	if (bDoOnceReload && CurrentWeapon && CurrentWeapon->CurrentAmmo > 0 && CurrentWeapon->CurrentMagazineAmmo < CurrentWeapon->MagazineSize)
 	{
-		switch (CurrentWeapon->AmmoType)
-		{
-		case 0:
-			// Assault Rifle ammo
-			if (PlayerStateRef->AssaultRifleAmmo > 0)
-			{
-				return true;
-			}
-			return false;
-		case 1:
-			// MiniGun Ammo
-			if (PlayerStateRef->MiniGunAmmo > 0)
-			{
-				return true;
-			}
-			return false;
-		case 2:
-			// Shotgun Ammo
-			if (PlayerStateRef->ShotgunAmmo > 0)
-			{
-				return true;
-			}
-			return false;
-		case 3:
-			// Rocket Ammo
-			if (PlayerStateRef->RocketAmmo > 0)
-			{
-				return true;
-			}
-			return false;
-		}
+		return true;
 	}
 	return false;
+}
+
+void ABaseWheeledVehiclePawn::ServerUpdateSpeedBoost_Implementation()
+{
+	SpeedBoostTime -= 1.0f;
+	if (SpeedBoostTime <= 0.0f)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(SpeedBoostTimer);
+		bBoostSpeed = false;
+	}
 }
 
 void ABaseWheeledVehiclePawn::ServerSetHealthLevel_Implementation(float CurrentHealth, float MaxHealth)
@@ -401,8 +468,6 @@ void ABaseWheeledVehiclePawn::ServerSetHealthLevel_Implementation(float CurrentH
 		FTimerHandle TimerHandle;
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ABaseWheeledVehiclePawn::ServerStartDestroy, RespawnDelay);
 	}
-		
-	ClientUpdateHealth(CurrentHealth / MaxHealth);
 }
 
 void ABaseWheeledVehiclePawn::MulticastDeath_Implementation()
@@ -421,15 +486,19 @@ void ABaseWheeledVehiclePawn::ServerStartDestroy_Implementation()
 }
 
 // Override in the player vehicle class
+void ABaseWheeledVehiclePawn::ClientUpdatePickup_Implementation(EPickupType PickupType)
+{
+}
+
 void ABaseWheeledVehiclePawn::ClientUpdateWeaponState_Implementation(EWeaponState WeaponState)
 {
 }
 
-void ABaseWheeledVehiclePawn::ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo)
+void ABaseWheeledVehiclePawn::ClientUpdateAmmo_Implementation(int32 CurrentAmmo)
 {
 }
 
-void ABaseWheeledVehiclePawn::ClientUpdateHealth_Implementation(float NewHealth)
+void ABaseWheeledVehiclePawn::ClientUpdateMagAmmo_Implementation(int32 CurrentMagAmmo)
 {
 }
 
