@@ -6,7 +6,7 @@ void APlayerHUD::Initialize_Implementation()
 {
 }
 
-void APlayerHUD::UpdateUI_Implementation(bool bInCar)
+void APlayerHUD::SetUIState_Implementation(bool bInCar)
 {
 }
 void APlayerHUD::AddCrosshairRecoil_Implementation(float Recoil, float ControlTime)
@@ -29,6 +29,14 @@ void APlayerHUD::UpdateWeaponState_Implementation(EWeaponState WeaponState)
 {
 }
 
-void APlayerHUD::UpdateAmmo_Implementation(int32 CurrentMagAmmo)
+void APlayerHUD::UpdateAmmo_Implementation(int32 CurrentAmmo)
+{
+}
+
+void APlayerHUD::UpdateMagAmmo_Implementation(int32 CurrentMagAmmo)
+{
+}
+
+void APlayerHUD::PickupMessage_Implementation(EPickupType PickupType)
 {
 }

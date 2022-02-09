@@ -4,12 +4,13 @@
 
 #include "ActorEnums.generated.h"
 
-UENUM()
+UENUM(BlueprintType)
 enum class EPickupType : uint8
 {
 	Weapon,
 	Ammo,
-	Health
+	Health,
+	SpeedBoost
 };
 
 UENUM()
@@ -42,7 +43,7 @@ enum class EAmmoType : uint8
 	AssaultRifle	UMETA(DisplayName = "Assault Rifle ammo"),	// Assault Rifle ammo
 	MiniGun			UMETA(DisplayName = "Minigun ammo"),		// MiniGun ammo
 	Shotgun			UMETA(DisplayName = "Shotgun ammo"),		// Shotgun ammo
-	Rocket			UMETA(DisplayName = "Rocket")				// Rocket
+	Rocket			UMETA(DisplayName = "Rocket ammo")			// Rocket ammo
 };
 
 /** To use in player UI */

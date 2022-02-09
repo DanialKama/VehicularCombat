@@ -83,6 +83,7 @@ APlayerWheeledVehiclePawn::APlayerWheeledVehiclePawn()
 	CurrentCamera = CameraOutside;
 	LookRightValue = LookUpValue = 0.0f;
 	bAutoAdjustCamera = true;
+	bCanAim = true;
 	bInCarCamera = false;
 	bAlwaysUpdateDashboard = false;
 	bDoOnceResetRotation = true;
@@ -96,6 +97,7 @@ void APlayerWheeledVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 
 	// Replicate to everyone
 	DOREPLIFETIME(APlayerWheeledVehiclePawn, PlayerControllerRef);
+	DOREPLIFETIME(APlayerWheeledVehiclePawn, bCanAim);
 	DOREPLIFETIME(APlayerWheeledVehiclePawn, bInCarCamera);
 }
 
@@ -130,10 +132,9 @@ void APlayerWheeledVehiclePawn::BeginPlay()
 	
 	if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		if (bAutoAdjustCamera == false)
+		if (bCanAim && bAutoAdjustCamera == false)
 		{
 			SpringArmOutside->bUsePawnControlRotation = true;
-			// SpringArmInside->bUsePawnControlRotation = true;	// TODO - Need to be improved
 		}
 	
 		WidgetRef = Cast<UInCarWidget>(WidgetDashboard->GetWidget());
@@ -153,17 +154,6 @@ void APlayerWheeledVehiclePawn::BeginPlay()
 void APlayerWheeledVehiclePawn::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	
-	PlayerControllerRef = Cast<APlayerController>(NewController);
-	if (PlayerControllerRef)
-	{
-		ClientInitialize();
-
-		PlayerControllerRef->PlayerCameraManager->ViewPitchMax = 25.0f;
-		PlayerControllerRef->PlayerCameraManager->ViewPitchMin = -20.0f;
-
-		SetActorTickEnabled(true);
-	}
 	
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Owner = this;
@@ -187,6 +177,17 @@ void APlayerWheeledVehiclePawn::PossessedBy(AController* NewController)
 			ServerAddWeapon(Weapon2);
 		}
 	}
+
+	PlayerControllerRef = Cast<APlayerController>(NewController);
+	if (PlayerControllerRef)
+	{
+		ClientInitialize();
+
+		PlayerControllerRef->PlayerCameraManager->ViewPitchMax = 25.0f;
+		PlayerControllerRef->PlayerCameraManager->ViewPitchMin = -20.0f;
+
+		SetActorTickEnabled(true);
+	}
 }
 
 void APlayerWheeledVehiclePawn::ClientInitialize_Implementation()
@@ -207,9 +208,9 @@ void APlayerWheeledVehiclePawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	
-	if (CurrentWeapon && GetLocalRole() == ROLE_Authority)
+	if (bCanAim && CurrentWeapon && GetLocalRole() == ROLE_Authority)
 	{
-		if (bInCarCamera == false)	// TODO - Add ease
+		if (bInCarCamera == false)
 		{
 			const FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(CurrentWeapon->GetActorLocation(), PlayerControllerRef->PlayerCameraManager->GetCameraLocation());
 			CurrentWeapon->SetActorRotation(FRotator(0.0f, Rotation.Yaw + 90.0f, Rotation.Pitch));
@@ -218,7 +219,7 @@ void APlayerWheeledVehiclePawn::Tick(float DeltaSeconds)
 	
 	if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		if (bAutoAdjustCamera)
+		if (bCanAim && bAutoAdjustCamera)
 		{
 			if (bDoOnceResetRotation && LookUpValue == 0.0f && LookRightValue == 0.0f)
 			{
@@ -255,6 +256,12 @@ void APlayerWheeledVehiclePawn::MoveForward(float Value)
 			GetVehicleMovementComponent()->SetBrakeInput(-Value);
 			GetVehicleMovementComponent()->UpdatedPrimitive->WakeAllRigidBodies();
 		}
+
+		if (bBoostSpeed)
+		{
+			const FVector CurrentVelocity = GetVehicleMovementComponent()->UpdatedComponent->GetComponentVelocity();
+			GetVehicleMovementComponent()->UpdatedComponent->ComponentVelocity = CurrentVelocity * SpeedBoostMultiplier;
+		}
 	}
 }
 
@@ -274,7 +281,8 @@ void APlayerWheeledVehiclePawn::LookUp(float Value)
 
 void APlayerWheeledVehiclePawn::LookRight(float Value)
 {
-	// if (bInCarCamera)	// TODO - Oh No, not math again
+	// Limit rotation of In-Car Camera
+	// if (bInCarCamera)
 	// {
 	// 	// clamp view yaw between -50 and 50
 	// 	float ControlYaw = PlayerControllerRef->GetControlRotation().Yaw;
@@ -333,11 +341,19 @@ void APlayerWheeledVehiclePawn::ClientUpdateWeaponState_Implementation(EWeaponSt
 	}
 }
 
-void APlayerWheeledVehiclePawn::ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo)
+void APlayerWheeledVehiclePawn::ClientUpdateAmmo_Implementation(int32 CurrentAmmo)
 {
 	if (PlayerHUDRef)
 	{
-		PlayerHUDRef->UpdateAmmo(CurrentMagAmmo);
+		PlayerHUDRef->UpdateAmmo(CurrentAmmo);
+	}
+}
+
+void APlayerWheeledVehiclePawn::ClientUpdateMagAmmo_Implementation(int32 CurrentMagAmmo)
+{
+	if (PlayerHUDRef)
+	{
+		PlayerHUDRef->UpdateMagAmmo(CurrentMagAmmo);
 	}
 }
 
@@ -379,8 +395,17 @@ void APlayerWheeledVehiclePawn::OnHandbrakeReleased()
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
 }
 
+void APlayerWheeledVehiclePawn::ClientUpdatePickup_Implementation(EPickupType PickupType)
+{
+	if (PlayerHUDRef)
+	{
+		PlayerHUDRef->PickupMessage(PickupType);
+	}
+}
+
 void APlayerWheeledVehiclePawn::OnRep_CurrentWeapon()
 {
+	// Only on client
 	if (PlayerHUDRef)
 	{
 		PlayerHUDRef->UpdateWeaponState(EWeaponState::Idle);
@@ -388,7 +413,8 @@ void APlayerWheeledVehiclePawn::OnRep_CurrentWeapon()
 		if (CurrentWeapon)
 		{
 			PlayerHUDRef->UpdateCurrentWeapon(CurrentWeapon->WeaponName);
-			PlayerHUDRef->UpdateAmmo(CurrentWeapon->CurrentMagazineAmmo);
+			ClientUpdateAmmo(CurrentWeapon->CurrentAmmo);
+			PlayerHUDRef->UpdateMagAmmo(CurrentWeapon->CurrentMagazineAmmo);
 			
 			if (CurrentWeapon->CurrentMagazineAmmo <= 0)
 			{
@@ -471,7 +497,7 @@ void APlayerWheeledVehiclePawn::ClientUpdateCurrentCamera_Implementation(bool bI
 	{
 		if (PlayerHUDRef)
 		{
-			PlayerHUDRef->UpdateUI(true);
+			PlayerHUDRef->SetUIState(true);
 		}
 		
 		CameraOutside->Deactivate();
@@ -488,7 +514,7 @@ void APlayerWheeledVehiclePawn::ClientUpdateCurrentCamera_Implementation(bool bI
 		
 		if (PlayerHUDRef)
 		{
-			PlayerHUDRef->UpdateUI(false);
+			PlayerHUDRef->SetUIState(false);
 		}
 	}
 }
@@ -504,6 +530,13 @@ void APlayerWheeledVehiclePawn::UpdateUI() const
 	{
 		PlayerHUDRef->UpdateSpeedAndGear(FMath::FloorToInt(KPH), GetVehicleMovement()->GetCurrentGear());
 	}
+}
+
+void APlayerWheeledVehiclePawn::ServerSetHealthLevel_Implementation(float CurrentHealth, float MaxHealth)
+{
+	Super::ServerSetHealthLevel_Implementation(CurrentHealth, MaxHealth);
+	
+	ClientUpdateHealth(CurrentHealth / MaxHealth);
 }
 
 void APlayerWheeledVehiclePawn::ClientUpdateHealth_Implementation(float NewHealth)

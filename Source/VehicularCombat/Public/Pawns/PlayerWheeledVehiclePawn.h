@@ -90,6 +90,13 @@ private:
 	void ServerToggleCamera();
 	void ServerToggleCamera_Implementation();
 
+	virtual void ServerSetHealthLevel_Implementation(float CurrentHealth, float MaxHealth) override;
+
+	/** Update health on player UI */
+	UFUNCTION(Client, Unreliable)
+	void ClientUpdateHealth(float NewHealth);
+	void ClientUpdateHealth_Implementation(float NewHealth);
+
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateCurrentCamera(bool bInCar);
 	void ClientUpdateCurrentCamera_Implementation(bool bInCar);
@@ -105,7 +112,9 @@ private:
 
 	/** Add recoil to player crosshair */
 	void AddRecoil();
-
+	
+	virtual void ClientUpdatePickup_Implementation(EPickupType PickupType) override;
+	
 	virtual void OnRep_CurrentWeapon() override;
 	virtual void OnRep_IsAlive() override;
 
@@ -113,8 +122,8 @@ private:
 	void UpdateUI() const;
 
 	virtual void ClientUpdateWeaponState_Implementation(EWeaponState WeaponState) override;
-	virtual void ClientUpdateAmmo_Implementation(int32 CurrentMagAmmo) override;
-	virtual void ClientUpdateHealth_Implementation(float NewHealth) override;
+	virtual void ClientUpdateAmmo_Implementation(int32 CurrentAmmo) override;
+	virtual void ClientUpdateMagAmmo_Implementation(int32 CurrentMagAmmo) override;
 
 // Variables
 private:
@@ -124,11 +133,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
 	TSubclassOf<AWeaponPickupActor> SecondaryWeaponToAdd;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ToolTip = "A delay between toggling the camera to stop the player from spamming the server.", AllowPrivateAccess = true))
-	float ToggleCameraCooldown;
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ToolTip = "Setting this to false will override Auto Adjust Camera.", AllowPrivateAccess = true))
+	uint8 bCanAim : 1;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ToolTip = "Automatically moves the camera to its default location", AllowPrivateAccess = true))
 	uint8 bAutoAdjustCamera : 1;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ToolTip = "A delay between toggling the camera to stop the player from spamming the server.", AllowPrivateAccess = true))
+	float ToggleCameraCooldown;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults", meta = (ToolTip = "Enable it if the vehicle has no roof and the dashboard is always visible.", AllowPrivateAccess = true))
 	uint8 bAlwaysUpdateDashboard : 1;
