@@ -6,8 +6,6 @@
 
 UHealthComponent::UHealthComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
-
 	// Initialize variables
 	CurrentHealth = MaxHealth = 1000.0f;
 	RestoreAmount = 50.0f;

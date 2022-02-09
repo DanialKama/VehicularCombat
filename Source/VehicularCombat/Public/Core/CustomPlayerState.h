@@ -7,6 +7,7 @@
 #include "CustomPlayerState.generated.h"
 
 class AWeaponPickupActor;
+class AAmmoPickupActor;
 
 UCLASS()
 class VEHICULARCOMBAT_API ACustomPlayerState : public APlayerState
@@ -20,6 +21,8 @@ public:
 	/** When the player left the session */
 	UFUNCTION(Server, Reliable)
 	void ServerPlayerDied();
+
+private:
 	void ServerPlayerDied_Implementation();
 	
 // Variables
@@ -29,20 +32,4 @@ public:
 
 	UPROPERTY(Replicated)
 	AWeaponPickupActor* SecondaryWeapon;
-
-	/** Assault Rifle Ammo */
-	UPROPERTY(Replicated)
-	int32 AssaultRifleAmmo;
-
-	/** MiniGun Ammo */
-	UPROPERTY(Replicated)
-	int32 MiniGunAmmo;
-
-	/** Shotgun Ammo */
-	UPROPERTY(Replicated)
-	int32 ShotgunAmmo;
-
-	/** Rocket Ammo */
-	UPROPERTY(Replicated)
-	int32 RocketAmmo;
 };
