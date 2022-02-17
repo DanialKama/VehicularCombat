@@ -121,6 +121,8 @@ void APlayerWheeledVehiclePawn::SetupPlayerInputComponent(class UInputComponent*
 	PlayerInputComponent->BindAction("Handbrake", IE_Released, this, &APlayerWheeledVehiclePawn::OnHandbrakeReleased);
 	
 	PlayerInputComponent->BindAction("SwitchCamera", IE_Pressed, this, &APlayerWheeledVehiclePawn::ToggleCamera);
+	
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerWheeledVehiclePawn::TryToJump);
 
 	PlayerInputComponent->BindAction("SwitchToPrimary", IE_Pressed, this, &APlayerWheeledVehiclePawn::SwitchToPrimary);
 	PlayerInputComponent->BindAction("SwitchToSecondary", IE_Pressed, this, &APlayerWheeledVehiclePawn::SwitchToSecondary);
@@ -393,6 +395,14 @@ void APlayerWheeledVehiclePawn::OnHandbrakePressed()
 void APlayerWheeledVehiclePawn::OnHandbrakeReleased()
 {
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
+}
+
+void APlayerWheeledVehiclePawn::TryToJump()
+{
+	if (bIsAlive)
+	{
+		ServerJump();
+	}
 }
 
 void APlayerWheeledVehiclePawn::ClientUpdatePickup_Implementation(EPickupType PickupType)

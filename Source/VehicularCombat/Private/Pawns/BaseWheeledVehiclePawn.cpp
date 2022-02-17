@@ -40,6 +40,7 @@ ABaseWheeledVehiclePawn::ABaseWheeledVehiclePawn()
 	bBoostSpeed = false;
 	SpeedBoostTime = 0.0f;
 	SpeedBoostMultiplier = 1.0;
+	JumpIntensity = 500.0f;
 }
 
 void ABaseWheeledVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
@@ -87,10 +88,23 @@ void ABaseWheeledVehiclePawn::Tick(float Delta)
 	EngineSoundComp->SetFloatParameter(EngineAudioRPM, WheeledVehicle->GetEngineRotationSpeed()*RPMToAudioScale);
 }
 
+bool ABaseWheeledVehiclePawn::ServerJump_Validate()
+{
+	if (bIsAlive)
+	{
+		return true;
+	}
+	return false;
+}
+
+void ABaseWheeledVehiclePawn::ServerJump_Implementation()
+{
+	const FVector Impulse = GetMesh()->GetUpVector() * JumpIntensity;
+	GetMesh()->AddImpulse(Impulse, FName(""), true);
+}
+
 void ABaseWheeledVehiclePawn::OnRep_PickupRef()
 {
-	UE_LOG(LogTemp, Warning, TEXT(__FUNCTION__));
-
 	if (GetLocalRole() == ROLE_Authority && PickupRef)
 	{
 		switch (PickupRef->PickupType)

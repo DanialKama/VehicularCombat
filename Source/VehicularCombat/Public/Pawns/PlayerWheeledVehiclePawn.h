@@ -101,6 +101,8 @@ private:
 	void ClientUpdateCurrentCamera(bool bInCar);
 	void ClientUpdateCurrentCamera_Implementation(bool bInCar);
 
+	void TryToJump();
+
 	/** Switch to primary weapon */
 	void SwitchToPrimary();
 

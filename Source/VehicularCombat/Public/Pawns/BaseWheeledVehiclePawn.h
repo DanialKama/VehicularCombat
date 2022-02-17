@@ -40,6 +40,9 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void Tick(float DeltaSeconds) override;
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerJump();
 	
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerAddWeapon(AWeaponPickupActor* NewWeapon);
@@ -81,6 +84,9 @@ protected:
 	virtual void ClientUpdateMagAmmo_Implementation(int32 CurrentMagAmmo);
 
 private:
+	bool ServerJump_Validate();
+	void ServerJump_Implementation();
+	
 	bool ServerStartFireWeapon_Validate();
 	void ServerStartFireWeapon_Implementation();
 
@@ -174,13 +180,16 @@ protected:
 	class UCameraComponent* CurrentCamera;
 
 private:
-	static const FName EngineAudioRPM;
-
+	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
+	float JumpIntensity;
+	
 	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "0.0", UIMin = "0.0", AllowPrivateAccess = true))
 	float RespawnDelay;
-
+	
 	UPROPERTY(Replicated)
 	float SpeedBoostTime;
+
+	static const FName EngineAudioRPM;
 	
 	FTimerHandle FireWeaponTimer, ResetFireWeaponTimer, ReloadTimer, SpeedBoostTimer;
 };
