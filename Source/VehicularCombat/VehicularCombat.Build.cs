@@ -19,9 +19,8 @@ public class VehicularCombat : ModuleRules
 			"PhysicsCore",
 			"NavigationSystem",
 			"OnlineSubsystem",
+			"OnlineSubsystemSteam",
 			"OnlineSubsystemUtils"
 		});
-		
-		PublicDefinitions.Add("HMD_MODULE_INCLUDED=1");
 	}
 }
