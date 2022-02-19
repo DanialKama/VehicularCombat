@@ -63,6 +63,10 @@ private:
 	void LookUp(float Value);
 	void LookRight(float Value);
 
+	UFUNCTION(Server, Reliable)
+	void ServerWakeRigidBodies();
+	void ServerWakeRigidBodies_Implementation();
+
 	UFUNCTION()
 	void PlayResetTimeline();
 
@@ -154,7 +158,7 @@ private:
 	UPROPERTY(Replicated)
 	bool bInCarCamera;
 
-	uint8 bDoOnceResetRotation : 1, bCanToggleCamera : 1;
+	uint8 bDoOnceResetRotation : 1, bCanToggleCamera : 1, bCanWakeRigidBodies : 1;
 
 	/** Can the player look left and right? Used to limit the player's field of view inside the car. */
 	uint8 bCanLookRight : 1;

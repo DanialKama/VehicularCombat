@@ -89,6 +89,7 @@ APlayerWheeledVehiclePawn::APlayerWheeledVehiclePawn()
 	bDoOnceResetRotation = true;
 	bCanToggleCamera = true;
 	ToggleCameraCooldown = 0.3f;
+	bCanWakeRigidBodies = false;
 }
 
 void APlayerWheeledVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
@@ -237,6 +238,16 @@ void APlayerWheeledVehiclePawn::Tick(float DeltaSeconds)
 				bDoOnceResetRotation = true;
 			}
 		}
+
+		// Only wake rigid bodies when the player is trying to move after a full stop
+		if (GetVelocity().Size() < 1.0f)
+		{
+			bCanWakeRigidBodies = true;
+		}
+		else
+		{
+			bCanWakeRigidBodies = false;
+		}
 	
 		UpdateUI();
 	}
@@ -246,17 +257,22 @@ void APlayerWheeledVehiclePawn::MoveForward(float Value)
 {
 	if (bIsAlive)
 	{
+		if (Value != 0.0f && bCanWakeRigidBodies)
+		{
+			GetVehicleMovementComponent()->UpdatedPrimitive->WakeAllRigidBodies();
+			ServerWakeRigidBodies();
+			bCanWakeRigidBodies = false;
+		}
+		
 		if (Value > 0)
 		{
 			GetVehicleMovementComponent()->SetThrottleInput(Value);
 			GetVehicleMovementComponent()->SetBrakeInput(0.0f);
-			GetVehicleMovementComponent()->UpdatedPrimitive->WakeAllRigidBodies();
 		}
 		else
 		{
 			GetVehicleMovementComponent()->SetThrottleInput(0.0f);
 			GetVehicleMovementComponent()->SetBrakeInput(-Value);
-			GetVehicleMovementComponent()->UpdatedPrimitive->WakeAllRigidBodies();
 		}
 
 		if (bBoostSpeed)
@@ -310,6 +326,11 @@ void APlayerWheeledVehiclePawn::LookRight(float Value)
 		LookRightValue = Value;
 		AddControllerYawInput(Value);
 	// }
+}
+
+void APlayerWheeledVehiclePawn::ServerWakeRigidBodies_Implementation()
+{
+	GetVehicleMovementComponent()->UpdatedPrimitive->WakeAllRigidBodies();
 }
 
 void APlayerWheeledVehiclePawn::StartFireWeapon()
