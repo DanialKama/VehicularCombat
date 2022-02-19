@@ -7,9 +7,21 @@ public class VehicularCombat : ModuleRules
 	public VehicularCombat(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ChaosVehicles", "HeadMountedDisplay", "PhysicsCore", "NavigationSystem" });
-
+		
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+		    "Core",
+		    "CoreUObject",
+		    "Engine",
+		    "InputCore",
+			"ChaosVehicles",
+			"HeadMountedDisplay",
+			"PhysicsCore",
+			"NavigationSystem",
+			"OnlineSubsystem",
+			"OnlineSubsystemUtils"
+		});
+		
 		PublicDefinitions.Add("HMD_MODULE_INCLUDED=1");
 	}
 }
