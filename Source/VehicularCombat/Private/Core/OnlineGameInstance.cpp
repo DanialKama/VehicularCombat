@@ -37,39 +37,45 @@ void UOnlineGameInstance::Init()
 	}
 }
 
-void UOnlineGameInstance::TryHostSession()
-{
-	if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
-	{
-		CreateSession(5, true);
-	}
-	else
-	{
-		CreateSession(5, false);
-	}
-}
-
-void UOnlineGameInstance::CreateSession(int32 NumPublicConnections, bool IsLANMatch)
+void UOnlineGameInstance::CreateSession(FCreateServerInfo InCreateServerInfo)
 {
 	if (SessionInterface.IsValid() == false)
 	{
 		OnCreateSessionCompleteEvent.Broadcast(false);
 		return;
 	}
+
+	if (InCreateServerInfo.ServerName != "")
+	{
+		SessionSettings = MakeShareable(new FOnlineSessionSettings);
+		SessionSettings->NumPrivateConnections = 0;
+		SessionSettings->NumPublicConnections = InCreateServerInfo.MaxPlayers;
+		SessionSettings->bAllowInvites = true;
+		SessionSettings->bAllowJoinInProgress = true;
+		SessionSettings->bAllowJoinViaPresence = true;
+		SessionSettings->bAllowJoinViaPresenceFriendsOnly = true;
+		SessionSettings->bIsDedicated = false;
+		SessionSettings->bUsesPresence = true;
+		SessionSettings->bShouldAdvertise = true;
+
+		// CreateServerInfo = InCreateServerInfo;
+		if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
+		{
+			SessionSettings->bIsLANMatch = true;
+		}
+		else
+		{
+			SessionSettings->bIsLANMatch = InCreateServerInfo.bIsLAN;
+		}
 	
-	SessionSettings = MakeShareable(new FOnlineSessionSettings);
-	SessionSettings->NumPrivateConnections = 0;
-	SessionSettings->NumPublicConnections = NumPublicConnections;
-	SessionSettings->bAllowInvites = true;
-	SessionSettings->bAllowJoinInProgress = true;
-	SessionSettings->bAllowJoinViaPresence = true;
-	SessionSettings->bAllowJoinViaPresenceFriendsOnly = true;
-	SessionSettings->bIsDedicated = false;
-	SessionSettings->bUsesPresence = true;
-	SessionSettings->bIsLANMatch = IsLANMatch;
-	SessionSettings->bShouldAdvertise = true;
+		SessionSettings->Set(FName("SERVER_NAME_KEY"), InCreateServerInfo.ServerName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 	
-	SessionInterface->CreateSession(0, FName("My Session"), *SessionSettings);
+		SessionInterface->CreateSession(0, FName("My Session"), *SessionSettings);
+	}
+	else
+	{
+		OnCreateSessionCompleteEvent.Broadcast(false);
+	}
 }
 
 void UOnlineGameInstance::OnCreateSessionCompleted(FName SessionName, bool bWasSuccessful)
@@ -87,16 +93,8 @@ void UOnlineGameInstance::OnCreateSessionCompleted(FName SessionName, bool bWasS
 
 void UOnlineGameInstance::FindSessions()
 {
-	JoinGameSession();
-}
-
-void UOnlineGameInstance::TryJoinSession()
-{
-	JoinGameSession();
-}
-
-void UOnlineGameInstance::JoinGameSession() // TODO - Use a better name
-{
+	ServerSearchState.Broadcast(true);
+	
 	SessionSearch = MakeShareable(new FOnlineSessionSearch);
 	
 	if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
@@ -136,23 +134,36 @@ void UOnlineGameInstance::OnFindSessionsCompleted(bool Successful)
 		TArray<FOnlineSessionSearchResult> SearchResults = SessionSearch->SearchResults;
 		if (SearchResults.Num() > 0)
 		{
-			for (FOnlineSessionSearchResult Result : SearchResults)
+			for (int32 i  = 0; i < SearchResults.Num(); ++i)
 			{
-				if (Result.IsValid() == false)
+				if (SearchResults[i].IsValid() == false)
 				{
 					continue;
 				}
-
+				
 				FServerInfo ServerInfo;
-				ServerInfo.ServerName = Result.Session.GetSessionIdStr();
-				ServerInfo.MaxPlayers = Result.Session.NumOpenPublicConnections;
-				ServerInfo.CurrentPlayers = ServerInfo.MaxPlayers - Result.Session.NumOpenPublicConnections;
-
+				SearchResults[i].Session.SessionSettings.Get(FName("SERVER_NAME_KEY"), ServerInfo.ServerName);
+				ServerInfo.MaxPlayers = SearchResults[i].Session.NumOpenPublicConnections;
+				ServerInfo.CurrentPlayers = ServerInfo.MaxPlayers - SearchResults[i].Session.NumOpenPublicConnections;
+				ServerInfo.bIsLAN = SearchResults[i].Session.SessionSettings.bIsLANMatch;
+				ServerInfo.Ping = SearchResults[i].PingInMs;
+				ServerInfo.ServerIndex = i;
 				ServerInfoDelegate.Broadcast(ServerInfo);
 			}
-			// const ULocalPlayer* const Player = GetFirstGamePlayer();
-			// SessionInterface->JoinSession(Player->GetUniqueID(), FName("My Session"), SearchResults[0]);
 		}
+	}
+	
+	ServerSearchState.Broadcast(false);
+}
+
+void UOnlineGameInstance::TryJoinSession(FName SessionName, int32 ServerIndex)
+{
+	UE_LOG(LogTemp, Warning, TEXT(__FUNCTION__));
+	const FOnlineSessionSearchResult Result = SessionSearch->SearchResults[ServerIndex];
+	if (Result.IsValid())
+	{
+		// const ULocalPlayer* const Player = GetFirstGamePlayer();
+		SessionInterface->JoinSession(0, FName("My Session"), Result);
 	}
 }
 

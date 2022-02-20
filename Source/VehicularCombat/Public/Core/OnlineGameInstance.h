@@ -16,6 +16,28 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FCSOnFindSessionsComplete, const TArray<FOn
 DECLARE_MULTICAST_DELEGATE_OneParam(FCSOnJoinSessionComplete, EOnJoinSessionCompleteResult::Type Result);
 
 USTRUCT(BlueprintType)
+struct FCreateServerInfo
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(BlueprintReadWrite)
+	FString ServerName;
+	
+	UPROPERTY(BlueprintReadWrite)
+	int32 MaxPlayers;
+	
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsLAN;
+	
+	FCreateServerInfo()
+	{
+		ServerName = "Session Name";
+		MaxPlayers = 5;
+		bIsLAN = false;
+	}
+};
+
+USTRUCT(BlueprintType)
 struct FServerInfo
 {
 	GENERATED_BODY()
@@ -28,16 +50,29 @@ struct FServerInfo
 
 	UPROPERTY(BlueprintReadOnly)
 	int32 MaxPlayers;
+	
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsLAN;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 Ping;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 ServerIndex;
 
 	FServerInfo()
 	{
 		ServerName = "Server Name";
 		CurrentPlayers = 1;
 		MaxPlayers = 2;
-	};
+		bIsLAN = false;
+		Ping = 1;
+		ServerIndex = 0;
+	}
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FServerInfoDelegate, FServerInfo, ServerInfo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FServerSearchState, bool, bIsSearching);
 
 UCLASS()
 class VEHICULARCOMBAT_API UOnlineGameInstance : public UGameInstance
@@ -49,9 +84,7 @@ public:
 	UOnlineGameInstance();
 
 	UFUNCTION(BlueprintCallable, Category = "Network")
-	void TryHostSession();
-	
-	void CreateSession(int32 NumPublicConnections, bool IsLANMatch);
+	void CreateSession(FCreateServerInfo InCreateServerInfo);
 
 	void UpdateSession();
 	
@@ -67,10 +100,9 @@ public:
 	void FindSessions();
 
 	UFUNCTION(BlueprintCallable, Category = "Network")
-	void TryJoinSession();
+	void TryJoinSession(FName SessionName, int32 ServerIndex);
 	
-	void JoinGameSession();
-	
+	// void JoinGameSession();
 
 protected:
 	virtual void Init() override;
@@ -89,6 +121,9 @@ private:
 public:
 	UPROPERTY(BlueprintAssignable)
 	FServerInfoDelegate ServerInfoDelegate;
+
+	UPROPERTY(BlueprintAssignable)
+	FServerSearchState ServerSearchState;
 	
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
@@ -98,7 +133,7 @@ private:
 	
 	TSharedPtr<FOnlineSessionSettings> SessionSettings;
 	TSharedPtr<FOnlineSessionSearch> SessionSearch;
-
+	
 	FCSOnCreateSessionComplete OnCreateSessionCompleteEvent;
 	FCSOnUpdateSessionComplete OnUpdateSessionCompleteEvent;
 	FCSOnStartSessionComplete OnStartSessionCompleteEvent;
