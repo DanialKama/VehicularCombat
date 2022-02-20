@@ -2,6 +2,7 @@
 
 #include "Core/OnlineGameInstance.h"
 #include "OnlineSubsystemUtils.h"
+#include "Kismet/GameplayStatics.h"
 
 UOnlineGameInstance::UOnlineGameInstance()
 {
@@ -31,13 +32,21 @@ void UOnlineGameInstance::Init()
 			// Bind delegates
 			SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UOnlineGameInstance::OnCreateSessionCompleted);
 			SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UOnlineGameInstance::OnFindSessionsCompleted);
+			SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UOnlineGameInstance::OnJoinSessionCompleted);
 		}
 	}
 }
 
 void UOnlineGameInstance::TryHostSession()
 {
-	CreateSession(5, true);
+	if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
+	{
+		CreateSession(5, true);
+	}
+	else
+	{
+		CreateSession(5, false);
+	}
 }
 
 void UOnlineGameInstance::CreateSession(int32 NumPublicConnections, bool IsLANMatch)
@@ -60,9 +69,7 @@ void UOnlineGameInstance::CreateSession(int32 NumPublicConnections, bool IsLANMa
 	SessionSettings->bIsLANMatch = IsLANMatch;
 	SessionSettings->bShouldAdvertise = true;
 	
-	// Creating a local player where we can get the UserID from
-	const ULocalPlayer* const Player = GetFirstGamePlayer();
-	SessionInterface->CreateSession(Player->GetUniqueID(), FName("My Session"), *SessionSettings);
+	SessionInterface->CreateSession(0, FName("My Session"), *SessionSettings);
 }
 
 void UOnlineGameInstance::OnCreateSessionCompleted(FName SessionName, bool bWasSuccessful)
@@ -78,21 +85,35 @@ void UOnlineGameInstance::OnCreateSessionCompleted(FName SessionName, bool bWasS
 	}
 }
 
+void UOnlineGameInstance::FindSessions()
+{
+	JoinGameSession();
+}
+
 void UOnlineGameInstance::TryJoinSession()
 {
 	JoinGameSession();
 }
 
-void UOnlineGameInstance::JoinGameSession()
+void UOnlineGameInstance::JoinGameSession() // TODO - Use a better name
 {
 	SessionSearch = MakeShareable(new FOnlineSessionSearch);
-	SessionSearch->bIsLanQuery = true;
+	
+	if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
+	{
+		SessionSearch->bIsLanQuery = true;
+	}
+	else
+	{
+		SessionSearch->bIsLanQuery = false;
+	}
+	
 	SessionSearch->MaxSearchResults = 20;
 	SessionSearch->PingBucketSize = 50;
-
-	// Creating a local player where we can get the UserID from
-	const ULocalPlayer* const Player = GetFirstGamePlayer();
-	SessionInterface->FindSessions(Player->GetUniqueID(), SessionSearch.ToSharedRef());
+	
+	SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+	
+	SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
 }
 
 void UOnlineGameInstance::OnFindSessionsCompleted(bool Successful)
@@ -109,6 +130,52 @@ void UOnlineGameInstance::OnFindSessionsCompleted(bool Successful)
 	// }
 	//
 	// OnFindSessionsCompleteEvent.Broadcast(LastSessionSearch->SearchResults, Successful);
+	
+	if (Successful)
+	{
+		TArray<FOnlineSessionSearchResult> SearchResults = SessionSearch->SearchResults;
+		if (SearchResults.Num() > 0)
+		{
+			for (FOnlineSessionSearchResult Result : SearchResults)
+			{
+				if (Result.IsValid() == false)
+				{
+					continue;
+				}
+
+				FServerInfo ServerInfo;
+				ServerInfo.ServerName = Result.Session.GetSessionIdStr();
+				ServerInfo.MaxPlayers = Result.Session.NumOpenPublicConnections;
+				ServerInfo.CurrentPlayers = ServerInfo.MaxPlayers - Result.Session.NumOpenPublicConnections;
+
+				ServerInfoDelegate.Broadcast(ServerInfo);
+			}
+			// const ULocalPlayer* const Player = GetFirstGamePlayer();
+			// SessionInterface->JoinSession(Player->GetUniqueID(), FName("My Session"), SearchResults[0]);
+		}
+	}
+}
+
+void UOnlineGameInstance::OnJoinSessionCompleted(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	// if (SessionInterface)
+	// {
+	// 	SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
+	// }
+	//
+	// OnJoinGameSessionCompleteEvent.Broadcast(Result);
+
+	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (PlayerController)
+	{
+		FString JoinAddress = "";
+		SessionInterface->GetResolvedConnectString(SessionName, JoinAddress);
+		if (JoinAddress != "")
+		{
+			UE_LOG(LogTemp, Warning, TEXT(__FUNCTION__));
+			PlayerController->ClientTravel(JoinAddress, TRAVEL_Absolute);
+		}
+	}
 }
 
 // void UOnlineGameInstance::CreateSession(int32 NumPublicConnections, bool IsLANMatch)
@@ -325,15 +392,15 @@ void UOnlineGameInstance::FindSessions(int32 MaxSearchResults, bool IsLANQuery)
 // 	}
 // }
 
-void UOnlineGameInstance::OnJoinSessionCompleted(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
-{
-	if (SessionInterface)
-	{
-		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
-	}
-	
-	OnJoinGameSessionCompleteEvent.Broadcast(Result);
-}
+// void UOnlineGameInstance::OnJoinSessionCompleted(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+// {
+// 	if (SessionInterface)
+// 	{
+// 		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
+// 	}
+// 	
+// 	OnJoinGameSessionCompleteEvent.Broadcast(Result);
+// }
 
 bool UOnlineGameInstance::TryTravelToCurrentSession()
 {

@@ -15,6 +15,30 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCSOnDestroySessionComplete, bool, S
 DECLARE_MULTICAST_DELEGATE_TwoParams(FCSOnFindSessionsComplete, const TArray<FOnlineSessionSearchResult>& SessionResults, bool Successful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FCSOnJoinSessionComplete, EOnJoinSessionCompleteResult::Type Result);
 
+USTRUCT(BlueprintType)
+struct FServerInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	FString ServerName;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 CurrentPlayers;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 MaxPlayers;
+
+	FServerInfo()
+	{
+		ServerName = "Server Name";
+		CurrentPlayers = 1;
+		MaxPlayers = 2;
+	};
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FServerInfoDelegate, FServerInfo, ServerInfo);
+
 UCLASS()
 class VEHICULARCOMBAT_API UOnlineGameInstance : public UGameInstance
 {
@@ -40,6 +64,9 @@ public:
 	void FindSessions(int32 MaxSearchResults, bool IsLANQuery);
 
 	UFUNCTION(BlueprintCallable, Category = "Network")
+	void FindSessions();
+
+	UFUNCTION(BlueprintCallable, Category = "Network")
 	void TryJoinSession();
 	
 	void JoinGameSession();
@@ -51,14 +78,18 @@ protected:
 	void OnStartSessionCompleted(FName SessionName, bool Successful);
 	void OnEndSessionCompleted(FName SessionName, bool Successful);
 	void OnDestroySessionCompleted(FName SessionName, bool Successful);
-	void OnJoinSessionCompleted(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 	bool TryTravelToCurrentSession();
 
 private:
 	void OnCreateSessionCompleted(FName SessionName, bool bWasSuccessful);
 	void OnFindSessionsCompleted(bool Successful);
+	void OnJoinSessionCompleted(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 	
 // Variables
+public:
+	UPROPERTY(BlueprintAssignable)
+	FServerInfoDelegate ServerInfoDelegate;
+	
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
 	FString LevelName;
