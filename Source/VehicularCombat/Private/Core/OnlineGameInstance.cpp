@@ -158,7 +158,6 @@ void UOnlineGameInstance::OnFindSessionsCompleted(bool Successful)
 
 void UOnlineGameInstance::TryJoinSession(FName SessionName, int32 ServerIndex)
 {
-	UE_LOG(LogTemp, Warning, TEXT(__FUNCTION__));
 	const FOnlineSessionSearchResult Result = SessionSearch->SearchResults[ServerIndex];
 	if (Result.IsValid())
 	{
@@ -183,7 +182,6 @@ void UOnlineGameInstance::OnJoinSessionCompleted(FName SessionName, EOnJoinSessi
 		SessionInterface->GetResolvedConnectString(SessionName, JoinAddress);
 		if (JoinAddress != "")
 		{
-			UE_LOG(LogTemp, Warning, TEXT(__FUNCTION__));
 			PlayerController->ClientTravel(JoinAddress, TRAVEL_Absolute);
 		}
 	}
