@@ -16,7 +16,7 @@
 #include "UI/InCarWidget.h"
 #include "UI/PlayerHUD.h"
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
+// PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 APlayerWheeledVehiclePawn::APlayerWheeledVehiclePawn()
 {
@@ -616,4 +616,4 @@ void APlayerWheeledVehiclePawn::OnRep_IsAlive()
 	}
 }
 
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
+// PRAGMA_ENABLE_DEPRECATION_WARNINGS
