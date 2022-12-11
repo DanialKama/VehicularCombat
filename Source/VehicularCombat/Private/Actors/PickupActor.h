@@ -8,7 +8,7 @@
 #include "PickupActor.generated.h"
 
 UCLASS()
-class VEHICULARCOMBAT_API APickupActor : public AActor
+class APickupActor : public AActor
 {
 	GENERATED_BODY()
 

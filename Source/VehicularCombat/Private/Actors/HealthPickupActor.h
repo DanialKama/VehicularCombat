@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Actors/PickupActor.h"
-#include "SpeedBoostPickupActor.generated.h"
+#include "PickupActor.h"
+#include "HealthPickupActor.generated.h"
 
 UCLASS()
-class VEHICULARCOMBAT_API ASpeedBoostPickupActor : public APickupActor
+class AHealthPickupActor : public APickupActor
 {
 	GENERATED_BODY()
 
@@ -19,16 +19,12 @@ class VEHICULARCOMBAT_API ASpeedBoostPickupActor : public APickupActor
 
 // Functions
 public:
-	/** Sets default values for this actor's properties */
-	ASpeedBoostPickupActor();
+	AHealthPickupActor();
 	
 	virtual void OnRep_PickupState() override;
-
+	
 // Variables
 public:
 	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "1", UIMin = "1"))
-	float BoostTime;
-
-	UPROPERTY(Replicated, EditDefaultsOnly, Category = "Defaults", meta = (ClampMin = "1", UIMin = "1"))
-	float BoostMultiplier;
+	float HealthAmount;
 };

@@ -8,21 +8,17 @@
 #include "SpawnManagerActor.generated.h"
 
 class APickupActor;
-class AWeaponPickupActor;
-class AAmmoPickupActor;
-class AHealthPickupActor;
-class ASpeedBoostPickupActor;
 
 USTRUCT(BlueprintType)
 struct FWeaponSpawnInfo
 {
 	GENERATED_BODY()
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
+	UPROPERTY(EditDefaultsOnly)
 	float SpawnDelay;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
-	TArray<TSubclassOf<AWeaponPickupActor>> WeaponsToSpawn;
+	UPROPERTY(EditDefaultsOnly)
+	TArray<TSubclassOf<APickupActor>> WeaponsToSpawn;
 
 	// Default constructor
 	FWeaponSpawnInfo()
@@ -40,7 +36,7 @@ struct FAmmoSpawnInfo
 	float SpawnDelay;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
-	TArray<TSubclassOf<AAmmoPickupActor>> AmmoToSpawn;
+	TArray<TSubclassOf<APickupActor>> AmmoToSpawn;
 
 	// Default constructor
 	FAmmoSpawnInfo()
@@ -58,7 +54,7 @@ struct FHealthSpawnInfo
 	float SpawnDelay;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
-	TArray<TSubclassOf<AHealthPickupActor>> HealthToSpawn;
+	TArray<TSubclassOf<APickupActor>> HealthToSpawn;
 
 	// Default constructor
 	FHealthSpawnInfo()
@@ -76,7 +72,7 @@ struct FSpeedBoostSpawnInfo
 	float SpawnDelay;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
-	TArray<TSubclassOf<ASpeedBoostPickupActor>> SpeedBoostToSpawn;
+	TArray<TSubclassOf<APickupActor>> SpeedBoostToSpawn;
 
 	// Default constructor
 	FSpeedBoostSpawnInfo()
@@ -86,7 +82,7 @@ struct FSpeedBoostSpawnInfo
 };
 
 UCLASS()
-class VEHICULARCOMBAT_API ASpawnManagerActor : public AActor
+class ASpawnManagerActor : public AActor
 {
 	GENERATED_BODY()
 
@@ -97,8 +93,7 @@ class VEHICULARCOMBAT_API ASpawnManagerActor : public AActor
 	class USphereComponent* RespawnRadius;
 
 // Functions
-public:	
-	/** Sets default values for this actor's properties */
+public:
 	ASpawnManagerActor();
 
 	/** Enter the respawn queue and wait till respawning */

@@ -1,11 +1,9 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Actors/WeaponPickupActor.h"
-#include "Actors/ProjectileActor.h"
-#include "Actors/SpawnManagerActor.h"
+#include "WeaponPickupActor.h"
+#include "ProjectileActor.h"
+#include "SpawnManagerActor.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetMathLibrary.h"
-#include "Camera/CameraComponent.h"
 #include "Sound/SoundCue.h"
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"

@@ -1,6 +1,6 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Pawns/BaseWheeledVehiclePawn.h"
+#include "BaseWheeledVehiclePawn.h"
 #include "Components/AudioComponent.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "Actors/AmmoPickupActor.h"
@@ -12,8 +12,6 @@
 #include "Net/UnrealNetwork.h"
 
 const FName ABaseWheeledVehiclePawn::EngineAudioRPM("RPM");
-
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 ABaseWheeledVehiclePawn::ABaseWheeledVehiclePawn()
 {
@@ -523,5 +521,3 @@ void ABaseWheeledVehiclePawn::OnRep_CurrentWeapon()
 void ABaseWheeledVehiclePawn::OnRep_IsAlive()
 {
 }
-
-PRAGMA_ENABLE_DEPRECATION_WARNINGS

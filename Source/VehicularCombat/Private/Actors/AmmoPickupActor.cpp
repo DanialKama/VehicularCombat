@@ -1,6 +1,6 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Actors/AmmoPickupActor.h"
+#include "AmmoPickupActor.h"
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Pawns/BaseWheeledVehiclePawn.h"
@@ -19,7 +19,7 @@ AAmmoPickupActor::AAmmoPickupActor()
 	SphereCollision->PrimaryComponentTick.bStartWithTickEnabled = false;
 	SphereCollision->bApplyImpulseOnDamage = false;
 	SphereCollision->CanCharacterStepUpOn = ECB_No;
-	SphereCollision->SetCollisionProfileName("CollisionBound");
+	SphereCollision->SetCollisionProfileName("CollisionBound");	// TODO: Change the collision profile
 	SphereCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);	// Collision is only get enabled when actor get dropped or spawned.
 	SphereCollision->OnComponentBeginOverlap.AddDynamic(this, &APickupActor::OnBeginOverlap);
 	SphereCollision->OnComponentEndOverlap.AddDynamic(this, &APickupActor::OnEndOverlap);

@@ -1,14 +1,10 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Actors/SpawnManagerActor.h"
+#include "SpawnManagerActor.h"
 #include "NavigationSystem.h"
 #include "Components/BillboardComponent.h"
 #include "Components/SphereComponent.h"
-#include "Actors/PickupActor.h"
-#include "Actors/WeaponPickupActor.h"
-#include "Actors/AmmoPickupActor.h"
-#include "Actors/HealthPickupActor.h"
-#include "Actors/SpeedBoostPickupActor.h"
+#include "PickupActor.h"
 #include "Kismet/GameplayStatics.h"
 
 ASpawnManagerActor::ASpawnManagerActor()
@@ -122,8 +118,8 @@ void ASpawnManagerActor::ServerSpawnSpeedBoost_Implementation()
 
 void ASpawnManagerActor::MulticastSpawn_Implementation(FTransform Transform, TSubclassOf<APickupActor> ActorToSpawn)
 {
-	APickupActor* NewActor = GetWorld()->SpawnActorDeferred<APickupActor>(ActorToSpawn, Transform, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-	if (NewActor)
+	if (APickupActor* NewActor = GetWorld()->SpawnActorDeferred<APickupActor>(ActorToSpawn, Transform, nullptr, nullptr,
+		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn))
 	{
 		if (GetLocalRole() == ROLE_Authority)
 		{

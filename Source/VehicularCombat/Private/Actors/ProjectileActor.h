@@ -86,7 +86,7 @@ struct FHitEffects
 };
 
 UCLASS()
-class VEHICULARCOMBAT_API AProjectileActor : public AActor
+class AProjectileActor : public AActor
 {
 	GENERATED_BODY()
 
@@ -100,12 +100,10 @@ class VEHICULARCOMBAT_API AProjectileActor : public AActor
 	class UProjectileMovementComponent* ProjectileMovement;
 
 // Functions
-public:	
-	/** Sets default values for this actor's properties */
+public:
 	AProjectileActor();
 
 protected:
-	/** Called when the game starts or when spawned */
 	virtual void BeginPlay() override;
 	virtual void LifeSpanExpired() override;
 

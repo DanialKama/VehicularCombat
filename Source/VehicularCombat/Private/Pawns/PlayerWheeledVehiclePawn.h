@@ -10,10 +10,8 @@
 class USpringArmComponent;
 class UCameraComponent;
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
 UCLASS()
-class VEHICULARCOMBAT_API APlayerWheeledVehiclePawn : public ABaseWheeledVehiclePawn
+class APlayerWheeledVehiclePawn : public ABaseWheeledVehiclePawn
 {
 	GENERATED_BODY()
 
@@ -36,6 +34,7 @@ class VEHICULARCOMBAT_API APlayerWheeledVehiclePawn : public ABaseWheeledVehicle
 	class UWidgetComponent* WidgetDashboard;
 
 	/** Reset controller rotation timeline */
+	UPROPERTY()
 	class UTimelineComponent* ResetRotationTimeline;
 
 // Functions
@@ -179,5 +178,3 @@ private:
 
 	FTimerHandle ResetRotationTimer, RecoilTimer, ToggleCameraTimer;
 };
-
-PRAGMA_ENABLE_DEPRECATION_WARNINGS

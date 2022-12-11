@@ -10,7 +10,7 @@ class AWeaponPickupActor;
 class AAmmoPickupActor;
 
 UCLASS()
-class VEHICULARCOMBAT_API ACustomPlayerState : public APlayerState
+class ACustomPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 

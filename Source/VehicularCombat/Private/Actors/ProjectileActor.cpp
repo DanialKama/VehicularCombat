@@ -1,6 +1,6 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Actors/ProjectileActor.h"
+#include "ProjectileActor.h"
 #include "Engine/DataTable.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -36,7 +36,7 @@ AProjectileActor::AProjectileActor()
 	ProjectileMovement->MaxSpeed = 5000.0f;
 	ProjectileMovement->ProjectileGravityScale = 0.1f;
 	
-	// Load data tables
+	// Load data tables	TODO: Set it in the BP instead of loading it from C++
 	static ConstructorHelpers::FObjectFinder<UDataTable> ProjectileDataObject(TEXT("DataTable'/Game/Blueprints/Projectiles/DT_ProjectileDamage.DT_ProjectileDamage'"));
 	if (ProjectileDataObject.Succeeded())
 	{

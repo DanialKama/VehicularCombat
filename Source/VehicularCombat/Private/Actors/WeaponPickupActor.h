@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Actors/PickupActor.h"
+#include "PickupActor.h"
 #include "WeaponPickupActor.generated.h"
 
 class USoundCue;
@@ -67,7 +67,7 @@ struct FRecoilData
 };
 
 UCLASS()
-class VEHICULARCOMBAT_API AWeaponPickupActor : public APickupActor
+class AWeaponPickupActor : public APickupActor
 {
 	GENERATED_BODY()
 

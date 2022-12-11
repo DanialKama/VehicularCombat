@@ -8,7 +8,7 @@
 #include "PlayerHUD.generated.h"
 
 UCLASS()
-class VEHICULARCOMBAT_API APlayerHUD : public AHUD
+class APlayerHUD : public AHUD
 {
 	GENERATED_BODY()
 

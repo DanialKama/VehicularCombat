@@ -7,7 +7,7 @@
 #include "InCarWidget.generated.h"
 
 UCLASS()
-class VEHICULARCOMBAT_API UInCarWidget : public UUserWidget
+class UInCarWidget : public UUserWidget
 {
 	GENERATED_BODY()
 

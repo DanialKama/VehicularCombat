@@ -1,6 +1,6 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Core/CustomGameMode.h"
+#include "CustomGameMode.h"
 
 void ACustomGameMode::ServerStartRespawn_Implementation(AController* Controller)
 {

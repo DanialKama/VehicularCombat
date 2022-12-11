@@ -1,6 +1,6 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Actors/SpeedBoostPickupActor.h"
+#include "SpeedBoostPickupActor.h"
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Pawns/BaseWheeledVehiclePawn.h"

@@ -7,7 +7,7 @@
 #include "CustomGameMode.generated.h"
 
 UCLASS()
-class VEHICULARCOMBAT_API ACustomGameMode : public AGameModeBase
+class ACustomGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	

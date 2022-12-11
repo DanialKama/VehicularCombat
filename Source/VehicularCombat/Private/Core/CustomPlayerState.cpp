@@ -1,6 +1,6 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Core/CustomPlayerState.h"
+#include "CustomPlayerState.h"
 #include "Actors/WeaponPickupActor.h"
 #include "Net/UnrealNetwork.h"
 

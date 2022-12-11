@@ -75,7 +75,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FServerInfoDelegate, FServerInfo, Se
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FServerSearchState, bool, bIsSearching);
 
 UCLASS()
-class VEHICULARCOMBAT_API UOnlineGameInstance : public UGameInstance
+class UOnlineGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 

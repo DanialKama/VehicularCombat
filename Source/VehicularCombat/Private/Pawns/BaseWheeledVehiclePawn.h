@@ -12,10 +12,8 @@ class APickupActor;
 class AWeaponPickupActor;
 class AAmmoPickupActor;
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
 UCLASS()
-class VEHICULARCOMBAT_API ABaseWheeledVehiclePawn : public AWheeledVehiclePawn
+class ABaseWheeledVehiclePawn : public AWheeledVehiclePawn
 {
 	GENERATED_BODY()
 
@@ -193,5 +191,3 @@ private:
 	
 	FTimerHandle FireWeaponTimer, ResetFireWeaponTimer, ReloadTimer, SpeedBoostTimer;
 };
-
-PRAGMA_ENABLE_DEPRECATION_WARNINGS

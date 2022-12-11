@@ -1,6 +1,6 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "UI/PlayerHUD.h"
+#include "PlayerHUD.h"
 
 void APlayerHUD::Initialize_Implementation()
 {

@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Actors/PickupActor.h"
+#include "PickupActor.h"
 #include "AmmoPickupActor.generated.h"
 
 UCLASS()
-class VEHICULARCOMBAT_API AAmmoPickupActor : public APickupActor
+class AAmmoPickupActor : public APickupActor
 {
 	GENERATED_BODY()
 
@@ -19,7 +19,6 @@ class VEHICULARCOMBAT_API AAmmoPickupActor : public APickupActor
 
 // Functions
 public:
-	/** Sets default values for this actor's properties */
 	AAmmoPickupActor();
 	
 	virtual void OnRep_PickupState() override;

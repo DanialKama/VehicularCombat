@@ -1,22 +1,18 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Pawns/PlayerWheeledVehiclePawn.h"
+#include "PlayerWheeledVehiclePawn.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "Actors/WeaponPickupActor.h"
 #include "Camera/CameraComponent.h"
-#include "Components/TextRenderComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Core/CustomGameMode.h"
 #include "Core/CustomPlayerState.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/InCarWidget.h"
 #include "UI/PlayerHUD.h"
-
-// PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 APlayerWheeledVehiclePawn::APlayerWheeledVehiclePawn()
 {
@@ -615,5 +611,3 @@ void APlayerWheeledVehiclePawn::OnRep_IsAlive()
 		}
 	}
 }
-
-// PRAGMA_ENABLE_DEPRECATION_WARNINGS

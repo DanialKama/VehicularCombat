@@ -1,8 +1,8 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Actors/PickupActor.h"
+#include "PickupActor.h"
 #include "Pawns/BaseWheeledVehiclePawn.h"
-#include "Actors/SpawnManagerActor.h"
+#include "SpawnManagerActor.h"
 #include "Net/UnrealNetwork.h"
 
 APickupActor::APickupActor()

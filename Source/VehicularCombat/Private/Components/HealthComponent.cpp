@@ -1,6 +1,6 @@
 // Copyright 2022 Danial Kamali. All Rights Reserved.
 
-#include "Components/HealthComponent.h"
+#include "HealthComponent.h"
 #include "Pawns/BaseWheeledVehiclePawn.h"
 #include "Net/UnrealNetwork.h"
 
